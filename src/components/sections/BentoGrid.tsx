@@ -42,6 +42,7 @@ function MecCard() {
           src="/assets/bento/molde-neon.png"
           alt=""
           fill
+          sizes="(min-width: 1024px) 60vw, 100vw"
           className="object-cover opacity-80 transition-transform duration-700 ease-out group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
@@ -68,6 +69,7 @@ function MecCard() {
               src="/assets/bento/selo-mec.png"
               alt="Selo do Ministério da Educação"
               fill
+              sizes="96px"
               className="object-contain drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]"
             />
           </div>
@@ -95,6 +97,7 @@ function PlatformCard() {
             src="/assets/bento/interface-devclub.png"
             alt="Interface da plataforma DevClub"
             fill
+            sizes="(min-width: 1024px) 440px, 90vw"
             className="object-cover object-top"
           />
         </div>
@@ -103,6 +106,7 @@ function PlatformCard() {
             src="/assets/bento/playground-devlcub.png"
             alt="Playground de código da DevClub"
             fill
+            sizes="(min-width: 1024px) 380px, 80vw"
             className="object-cover object-top"
           />
         </div>

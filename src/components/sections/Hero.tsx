@@ -31,6 +31,8 @@ export function Hero() {
           const { isReduced } = context.conditions as { isReduced: boolean };
 
           if (isReduced) {
+            // Skip the scripted story entirely: jump straight to the resting
+            // state (final headline + CTA) so no motion is ever forced.
             gsap.set(
               [
                 eletricistaRef.current,
@@ -39,6 +41,7 @@ export function Hero() {
                 text2Ref.current,
                 badgeRef.current,
                 logoDesconstruidaRef.current,
+                scrollHintRef.current,
               ],
               { autoAlpha: 0 },
             );
@@ -47,18 +50,10 @@ export function Hero() {
             return;
           }
 
-          gsap.set(scrollHintRef.current, { autoAlpha: 1 });
-          gsap.set(
-            [
-              programadorRef.current,
-              badgeRef.current,
-              logoDesconstruidaRef.current,
-              logoCleanRef.current,
-              finalContentRef.current,
-            ],
-            { autoAlpha: 0 },
-          );
-
+          // Baseline visible/hidden state already lives in the JSX
+          // className (invisible/opacity-0) so there is no flash of
+          // overlapping content before this effect ever runs; these tweens
+          // only need to animate away from that baseline.
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: section,
@@ -157,11 +152,13 @@ export function Hero() {
           alt=""
           fill
           priority
+          sizes="100vw"
           className="object-cover opacity-30"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
       </div>
 
+      {/* Phase 1: eletricista (visible by default) */}
       <div
         ref={eletricistaRef}
         className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
@@ -172,55 +169,67 @@ export function Hero() {
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
             fill
             priority
+            sizes="(min-width: 1024px) 448px, 90vw"
             className="object-contain object-bottom"
           />
         </div>
       </div>
 
+      {/* Phase 2: programador */}
       <div
         ref={programadorRef}
-        className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
+        className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
       >
         <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
           <Image
             src="/assets/hero/rodolfo-programador.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
             fill
+            sizes="(min-width: 1024px) 448px, 90vw"
             className="object-contain object-bottom"
           />
         </div>
       </div>
 
+      {/* Phase 4a: deconstructed logo */}
       <div
         ref={logoDesconstruidaRef}
-        className="absolute inset-0 flex items-center justify-center"
+        className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
         <div className="relative h-[70%] w-[70%] max-w-xl">
           <Image
             src="/assets/hero/logo-desconstruida-devclub.jpg"
             alt=""
             fill
+            sizes="(min-width: 1024px) 576px, 70vw"
             className="object-contain"
           />
         </div>
       </div>
 
+      {/* Phase 4b: clean neon logo */}
       <div
         ref={logoCleanRef}
-        className="absolute inset-0 flex items-center justify-center"
+        className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
         <div className="relative h-32 w-64 sm:h-40 sm:w-80">
           <Image
             src="/assets/hero/logo-devclub.svg"
             alt="DevClub"
             fill
+            sizes="320px"
             className="object-contain drop-shadow-[0_0_35px_var(--color-accent-glow)]"
           />
         </div>
       </div>
 
-      <div className="relative z-10 flex h-full w-full flex-col justify-center px-6 sm:px-12 lg:w-3/5 lg:px-20">
-        <div ref={text1Ref} className="absolute max-w-xl">
+      {/* Each phase's copy fills the exact same slot (absolute inset-0) so
+          they can never visually collide -- only opacity differentiates them. */}
+      <div
+        ref={text1Ref}
+        className="absolute inset-0 z-10 flex flex-col justify-center px-6 sm:px-12 lg:w-3/5 lg:px-20"
+      >
+        <div className="max-w-xl">
           <p className="mb-4 font-heading text-sm font-medium uppercase tracking-[0.3em] text-accent">
             A história por trás do DevClub
           </p>
@@ -228,30 +237,39 @@ export function Hero() {
             De Eletricista com 5 anos de carreira sem perspectiva...
           </h1>
         </div>
+      </div>
 
-        <div ref={text2Ref} className="absolute max-w-xl">
+      <div
+        ref={text2Ref}
+        className="invisible absolute inset-0 z-10 flex flex-col justify-center px-6 opacity-0 sm:px-12 lg:w-3/5 lg:px-20"
+      >
+        <div className="max-w-xl">
           <h1 className="font-heading text-4xl font-semibold leading-[1.1] text-foreground sm:text-5xl lg:text-6xl">
             ...a Desenvolvedor contratado pelo{" "}
             <span className="text-accent text-glow">Santander</span> em
             apenas 6 meses.
           </h1>
         </div>
+      </div>
 
-        <div
-          ref={badgeRef}
-          className="glass absolute inline-flex w-fit items-center gap-3 rounded-full px-5 py-3"
-        >
+      <div
+        ref={badgeRef}
+        className="invisible absolute inset-0 z-10 flex flex-col justify-center px-6 opacity-0 sm:px-12 lg:w-3/5 lg:px-20"
+      >
+        <div className="glass inline-flex w-fit items-center gap-3 rounded-full px-5 py-3">
           <span className="h-2 w-2 shrink-0 rounded-full bg-accent glow-accent" />
           <span className="font-heading text-sm font-medium text-foreground sm:text-base">
             Rodolfo Mori é Embaixador Oficial da{" "}
             <span className="text-accent">OpenAI</span>
           </span>
         </div>
+      </div>
 
-        <div
-          ref={finalContentRef}
-          className="absolute max-w-xl space-y-8"
-        >
+      <div
+        ref={finalContentRef}
+        className="invisible absolute inset-0 z-10 flex flex-col justify-center px-6 opacity-0 sm:px-12 lg:w-3/5 lg:px-20"
+      >
+        <div className="max-w-xl space-y-8">
           <h1 className="font-heading text-4xl font-semibold leading-[1.1] text-foreground sm:text-5xl lg:text-6xl">
             Fundação do DevClub: a maior escola de{" "}
             <span className="text-accent text-glow">programação e IA</span>{" "}
@@ -269,7 +287,7 @@ export function Hero() {
 
       <div
         ref={scrollHintRef}
-        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 opacity-0"
+        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2"
         aria-hidden="true"
       >
         <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
