@@ -89,9 +89,14 @@ export function Hero() {
             // Pixel-based (not a bare percentage) so there's no ambiguity
             // about what the percentage is relative to -- this is what was
             // causing the pin to never release: "+=400%" wasn't resolving
-            // to a distance the user could actually scroll past.
-            end: () => "+=" + window.innerHeight * 2,
-            scrub: 1,
+            // to a distance the user could actually scroll past. 3x the
+            // viewport gives each phase enough scroll-distance to breathe
+            // instead of snapping past in a quick flick of the wheel.
+            end: () => "+=" + window.innerHeight * 3,
+            // >1 adds physical inertia: the timeline keeps gliding toward
+            // the scrollbar's target for `scrub` seconds after the wheel
+            // stops, instead of snapping 1:1 to scroll position.
+            scrub: 1.5,
             pin: true,
             pinSpacing: true,
             anticipatePin: 1,
@@ -108,35 +113,55 @@ export function Hero() {
           0,
         );
 
-        tl.to(scrollHintRef.current, { autoAlpha: 0, duration: 0.15 }, 0.05)
+        tl.to(
+            scrollHintRef.current,
+            { autoAlpha: 0, duration: 0.15, ease: "power2.out" },
+            0.05,
+          )
             // Phase 1 -> 2: eletricista crossfades into programador
             .to(
               text1Ref.current,
-              { autoAlpha: 0, y: -24, duration: 0.4 },
+              { autoAlpha: 0, y: -24, duration: 0.4, ease: "power2.inOut" },
               0.55,
             )
             .to(
               eletricistaRef.current,
-              { autoAlpha: 0, scale: 1.04, duration: 0.45 },
+              { autoAlpha: 0, scale: 1.04, duration: 0.45, ease: "power2.inOut" },
               0.6,
             )
-            .to(programadorRef.current, { autoAlpha: 1, duration: 0.45 }, 0.65)
+            .to(
+              programadorRef.current,
+              { autoAlpha: 1, duration: 0.45, ease: "power3.out" },
+              0.65,
+            )
             .fromTo(
               text2Ref.current,
               { autoAlpha: 0, y: 24 },
-              { autoAlpha: 1, y: 0, duration: 0.4 },
+              { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out" },
               0.8,
             )
             // Phase 3: OpenAI ambassador badge
-            .to(text2Ref.current, { autoAlpha: 0, y: -24, duration: 0.35 }, 1.5)
+            .to(
+              text2Ref.current,
+              { autoAlpha: 0, y: -24, duration: 0.35, ease: "power2.inOut" },
+              1.5,
+            )
             .fromTo(
               badgeRef.current,
               { autoAlpha: 0, y: 16, scale: 0.9 },
-              { autoAlpha: 1, y: 0, scale: 1, duration: 0.4 },
+              { autoAlpha: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" },
               1.55,
             )
-            .to(badgeRef.current, { autoAlpha: 0, scale: 0.95, duration: 0.3 }, 2.15)
-            .to(programadorRef.current, { autoAlpha: 0, duration: 0.4 }, 2.15)
+            .to(
+              badgeRef.current,
+              { autoAlpha: 0, scale: 0.95, duration: 0.3, ease: "power2.inOut" },
+              2.15,
+            )
+            .to(
+              programadorRef.current,
+              { autoAlpha: 0, duration: 0.4, ease: "power2.inOut" },
+              2.15,
+            )
             // Phase 4: shattered fragments fly together and assemble the
             // deconstructed logo, which itself fades/settles as a whole
             .fromTo(
@@ -147,6 +172,7 @@ export function Hero() {
                 scale: 1,
                 filter: "blur(0px)",
                 duration: 0.6,
+                ease: "power3.out",
               },
               2.5,
             )
@@ -165,13 +191,13 @@ export function Hero() {
                 opacity: 1,
                 duration: 0.7,
                 stagger: 0.03,
-                ease: "power2.out",
+                ease: "power3.out",
               },
               2.5,
             )
             .to(
               logoDesconstruidaRef.current,
-              { autoAlpha: 0, scale: 0.92, duration: 0.5 },
+              { autoAlpha: 0, scale: 0.92, duration: 0.5, ease: "power2.inOut" },
               3.2,
             )
             .fromTo(
@@ -189,7 +215,7 @@ export function Hero() {
             .fromTo(
               finalContentRef.current,
               { autoAlpha: 0, y: 24 },
-              { autoAlpha: 1, y: 0, duration: 0.5 },
+              { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" },
               3.5,
             );
       }, section);
@@ -251,20 +277,14 @@ export function Hero() {
         ref={programadorRef}
         className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div
-          style={radialFadeMask}
-          className="relative h-[78%] w-full max-w-md lg:h-[92%]"
-        >
+        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
           <Image
-            src="/assets/hero/rodolfo-programador.png"
+            src="/assets/hero/rodolfo-programador-cutout.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
             fill
             sizes="(min-width: 1024px) 448px, 90vw"
-            className="object-contain object-bottom mix-blend-lighten"
+            className="object-contain object-bottom"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 
@@ -298,14 +318,14 @@ export function Hero() {
                   ref={(el) => {
                     fragmentRefs.current[i] = el;
                   }}
-                  className="absolute mix-blend-screen"
+                  className="absolute"
                   style={{
                     width: `${FRAGMENT_GRID.cols * 100}%`,
                     height: `${FRAGMENT_GRID.rows * 100}%`,
                     left: `${-col * 100}%`,
                     top: `${-row * 100}%`,
                     backgroundImage:
-                      "url(/assets/hero/logo-desconstruida-devclub.jpg)",
+                      "url(/assets/hero/logo-desconstruida-cutout.png)",
                     backgroundSize: "100% 100%",
                   }}
                 />
