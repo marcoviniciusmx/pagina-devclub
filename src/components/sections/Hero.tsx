@@ -26,10 +26,7 @@ export function Hero() {
       const mm = gsap.matchMedia();
 
       mm.add(
-        {
-          isReduced: "(prefers-reduced-motion: reduce)",
-          isFull: "(prefers-reduced-motion: no-preference)",
-        },
+        { isReduced: "(prefers-reduced-motion: reduce)" },
         (context) => {
           const { isReduced } = context.conditions as { isReduced: boolean };
 
