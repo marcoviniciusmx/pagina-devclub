@@ -234,21 +234,15 @@ export function Hero() {
         ref={eletricistaRef}
         className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
       >
-        <div
-          style={radialFadeMask}
-          className="relative h-[78%] w-full max-w-md lg:h-[92%]"
-        >
+        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
           <Image
-            src="/assets/hero/rodolfo-eletricista.png"
+            src="/assets/hero/rodolfo-eletricista-cutout.png"
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
             fill
             priority
             sizes="(min-width: 1024px) 448px, 90vw"
-            className="object-contain object-bottom mix-blend-lighten"
+            className="object-contain object-bottom"
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 
