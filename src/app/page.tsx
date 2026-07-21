@@ -4,6 +4,7 @@ import { BentoGrid } from "@/components/sections/BentoGrid";
 import { Formacao } from "@/components/sections/Formacao";
 import { Mentoria } from "@/components/sections/Mentoria";
 import { Depoimentos } from "@/components/sections/Depoimentos";
+import { Faq } from "@/components/sections/Faq";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <Formacao />
       <Mentoria />
       <Depoimentos />
+      <Faq />
     </main>
   );
 }
