@@ -1,10 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { DEVCLUB_URL } from "@/lib/data";
+
+// Applied via inline style (not a Tailwind class) because unprefixed
+// mask-image alone isn't consistently honored across Chromium/WebKit --
+// both properties are required for the mask to actually render.
+const radialFadeMask: CSSProperties = {
+  WebkitMaskImage:
+    "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+  maskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
+};
 
 const FRAGMENT_GRID = { cols: 3, rows: 2 };
 const FRAGMENT_SCATTER = [
@@ -225,15 +234,21 @@ export function Hero() {
         ref={eletricistaRef}
         className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] lg:h-[92%]">
+        <div
+          style={radialFadeMask}
+          className="relative h-[78%] w-full max-w-md lg:h-[92%]"
+        >
           <Image
             src="/assets/hero/rodolfo-eletricista.png"
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
             fill
             priority
             sizes="(min-width: 1024px) 448px, 90vw"
-            className="object-contain object-bottom"
+            className="object-contain object-bottom mix-blend-lighten"
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 
@@ -242,14 +257,20 @@ export function Hero() {
         ref={programadorRef}
         className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] lg:h-[92%]">
+        <div
+          style={radialFadeMask}
+          className="relative h-[78%] w-full max-w-md lg:h-[92%]"
+        >
           <Image
             src="/assets/hero/rodolfo-programador.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
             fill
             sizes="(min-width: 1024px) 448px, 90vw"
-            className="object-contain object-bottom"
+            className="object-contain object-bottom mix-blend-lighten"
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent" />
         </div>
       </div>
 
@@ -259,7 +280,10 @@ export function Hero() {
         ref={logoDesconstruidaRef}
         className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
-        <div className="relative h-[70%] w-[70%] max-w-xl [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] [perspective:800px]">
+        <div
+          style={radialFadeMask}
+          className="relative h-[70%] w-[70%] max-w-xl [perspective:800px]"
+        >
           {Array.from({
             length: FRAGMENT_GRID.rows * FRAGMENT_GRID.cols,
           }).map((_, i) => {
@@ -294,6 +318,7 @@ export function Hero() {
               </div>
             );
           })}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent" />
         </div>
       </div>
 
