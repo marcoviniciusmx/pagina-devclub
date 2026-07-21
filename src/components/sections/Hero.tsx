@@ -80,6 +80,7 @@ export function Hero() {
             end: "+=400%",
             scrub: 1,
             pin: true,
+            pinSpacing: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },
@@ -173,10 +174,6 @@ export function Hero() {
               { autoAlpha: 1, y: 0, duration: 0.5 },
               3.5,
             );
-
-        // Belt-and-suspenders: re-measure once more after this tick in case
-        // fonts/images are still settling the layout.
-        ScrollTrigger.refresh();
       }, section);
 
       ctxRef.current = ctx;
@@ -197,7 +194,7 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative h-screen w-full overflow-hidden bg-background"
+      className="relative z-20 h-screen w-full overflow-hidden bg-background"
     >
       <div
         ref={bgFiosRef}
@@ -209,7 +206,7 @@ export function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover opacity-30"
+          className="object-cover opacity-30 mix-blend-luminosity"
         />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
@@ -219,7 +216,7 @@ export function Hero() {
         ref={eletricistaRef}
         className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
+        <div className="relative h-[78%] w-full max-w-md [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)] lg:h-[92%]">
           <Image
             src="/assets/hero/rodolfo-eletricista.png"
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
@@ -236,7 +233,7 @@ export function Hero() {
         ref={programadorRef}
         className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
+        <div className="relative h-[78%] w-full max-w-md [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)] lg:h-[92%]">
           <Image
             src="/assets/hero/rodolfo-programador.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
