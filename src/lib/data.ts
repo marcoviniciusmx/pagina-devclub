@@ -46,7 +46,7 @@ export const mentors: Mentor[] = [
   {
     name: "Fernanda",
     role: "Preparação Recruiter, LinkedIn & Entrevistas",
-    image: "/assets/mentores/fernanda-recruiter-cutout.png",
+    image: "/assets/mentores/fernanda-recuiter-cutout.png",
   },
   {
     name: "Juliana",
