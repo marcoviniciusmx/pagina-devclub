@@ -3,6 +3,7 @@ import { Marquee } from "@/components/sections/Marquee";
 import { BentoGrid } from "@/components/sections/BentoGrid";
 import { Formacao } from "@/components/sections/Formacao";
 import { Mentoria } from "@/components/sections/Mentoria";
+import { Depoimentos } from "@/components/sections/Depoimentos";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <BentoGrid />
       <Formacao />
       <Mentoria />
+      <Depoimentos />
     </main>
   );
 }
