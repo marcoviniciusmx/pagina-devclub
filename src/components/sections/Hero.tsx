@@ -77,7 +77,11 @@ export function Hero() {
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            end: "+=400%",
+            // Pixel-based (not a bare percentage) so there's no ambiguity
+            // about what the percentage is relative to -- this is what was
+            // causing the pin to never release: "+=400%" wasn't resolving
+            // to a distance the user could actually scroll past.
+            end: () => "+=" + window.innerHeight * 2,
             scrub: 1,
             pin: true,
             pinSpacing: true,
@@ -128,8 +132,13 @@ export function Hero() {
             // deconstructed logo, which itself fades/settles as a whole
             .fromTo(
               logoDesconstruidaRef.current,
-              { autoAlpha: 0, filter: "blur(4px)" },
-              { autoAlpha: 1, filter: "blur(0px)", duration: 0.6 },
+              { autoAlpha: 0, scale: 1.3, filter: "blur(10px)" },
+              {
+                autoAlpha: 1,
+                scale: 1,
+                filter: "blur(0px)",
+                duration: 0.6,
+              },
               2.5,
             )
             .fromTo(
@@ -216,7 +225,7 @@ export function Hero() {
         ref={eletricistaRef}
         className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)] lg:h-[92%]">
+        <div className="relative h-[78%] w-full max-w-md [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] lg:h-[92%]">
           <Image
             src="/assets/hero/rodolfo-eletricista.png"
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
@@ -233,7 +242,7 @@ export function Hero() {
         ref={programadorRef}
         className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)] lg:h-[92%]">
+        <div className="relative h-[78%] w-full max-w-md [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] lg:h-[92%]">
           <Image
             src="/assets/hero/rodolfo-programador.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
@@ -250,7 +259,7 @@ export function Hero() {
         ref={logoDesconstruidaRef}
         className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
-        <div className="relative h-[70%] w-[70%] max-w-xl [perspective:800px]">
+        <div className="relative h-[70%] w-[70%] max-w-xl [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)] [perspective:800px]">
           {Array.from({
             length: FRAGMENT_GRID.rows * FRAGMENT_GRID.cols,
           }).map((_, i) => {
@@ -271,7 +280,7 @@ export function Hero() {
                   ref={(el) => {
                     fragmentRefs.current[i] = el;
                   }}
-                  className="absolute"
+                  className="absolute mix-blend-screen"
                   style={{
                     width: `${FRAGMENT_GRID.cols * 100}%`,
                     height: `${FRAGMENT_GRID.rows * 100}%`,
