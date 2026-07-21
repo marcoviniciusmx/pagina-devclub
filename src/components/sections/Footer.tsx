@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { DEVCLUB_URL } from "@/lib/data";
+import { NeonButton } from "@/components/ui/NeonButton";
 
 const institutionalLinks = [
   { label: "Termos de Uso", href: "#" },
@@ -12,6 +13,15 @@ export function Footer() {
 
   return (
     <footer className="relative border-t border-border">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 border-b border-border px-6 py-16 text-center">
+        <h2 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
+          Pronto para virar a chave?
+        </h2>
+        <NeonButton href={DEVCLUB_URL} target="_blank" rel="noopener noreferrer">
+          Quero me tornar um Desenvolvedor
+        </NeonButton>
+      </div>
+
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-14 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-4">
           <div className="relative h-8 w-36">

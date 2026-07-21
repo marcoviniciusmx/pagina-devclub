@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { companyItems, stackItems } from "@/lib/data";
 
 function MarqueeRow({
@@ -10,19 +13,34 @@ function MarqueeRow({
   reverse?: boolean;
   fast?: boolean;
 }) {
+  const [isSlowed, setIsSlowed] = useState(false);
+  const baseDuration = fast ? 18 : 32;
   const track = [...items, ...items];
 
   return (
-    <div className="mask-fade-x relative overflow-hidden">
+    <div
+      className="mask-fade-x relative overflow-hidden"
+      onMouseEnter={() => setIsSlowed(true)}
+      onMouseLeave={() => setIsSlowed(false)}
+    >
       <div
-        className={`flex w-max items-center gap-12 ${fast ? "animate-marquee-fast" : "animate-marquee"} ${reverse ? "[animation-direction:reverse]" : ""}`}
+        style={{
+          animationName: "marquee",
+          animationTimingFunction: "linear",
+          animationIterationCount: "infinite",
+          animationDirection: reverse ? "reverse" : "normal",
+          animationDuration: `${isSlowed ? baseDuration * 3 : baseDuration}s`,
+          transitionProperty: "animation-duration",
+          transitionDuration: "300ms",
+        }}
+        className="flex w-max items-center gap-12"
       >
         {track.map((item, index) => (
           <div
             key={`${item.name}-${index}`}
-            className="flex shrink-0 items-center gap-3 opacity-70 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
+            className="group flex shrink-0 items-center gap-3 opacity-70 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
           >
-            <div className="relative h-8 w-8 shrink-0">
+            <div className="relative h-8 w-8 shrink-0 transition-[filter] duration-300 group-hover:drop-shadow-[0_0_10px_var(--color-accent-glow)]">
               <Image
                 src={item.icon}
                 alt={item.name}
@@ -30,7 +48,7 @@ function MarqueeRow({
                 className="object-contain"
               />
             </div>
-            <span className="font-heading text-lg font-medium whitespace-nowrap text-foreground">
+            <span className="font-heading text-lg font-medium whitespace-nowrap text-foreground transition-colors duration-300 group-hover:text-accent">
               {item.name}
             </span>
           </div>

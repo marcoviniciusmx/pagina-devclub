@@ -6,66 +6,95 @@ import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { DEVCLUB_URL } from "@/lib/data";
 
+const FRAGMENT_GRID = { cols: 3, rows: 2 };
+const FRAGMENT_SCATTER = [
+  { x: -90, y: -70, rotate: -20 },
+  { x: 60, y: -100, rotate: 24 },
+  { x: 110, y: -30, rotate: -16 },
+  { x: -110, y: 50, rotate: 18 },
+  { x: -40, y: 100, rotate: -22 },
+  { x: 90, y: 80, rotate: 16 },
+];
+
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
+  const bgFiosRef = useRef<HTMLDivElement>(null);
   const eletricistaRef = useRef<HTMLDivElement>(null);
   const text1Ref = useRef<HTMLDivElement>(null);
   const programadorRef = useRef<HTMLDivElement>(null);
   const text2Ref = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
   const logoDesconstruidaRef = useRef<HTMLDivElement>(null);
+  const fragmentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const logoCleanRef = useRef<HTMLDivElement>(null);
   const finalContentRef = useRef<HTMLDivElement>(null);
   const scrollHintRef = useRef<HTMLDivElement>(null);
+  const ctxRef = useRef<gsap.Context | null>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
 
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
+    let cancelled = false;
+    // Turbopack injects Tailwind's stylesheet after first paint in dev, so
+    // measuring/pinning on the same tick can grab a pre-CSS layout (0-height
+    // section). Deferring one frame guarantees ScrollTrigger measures the
+    // real, styled layout, in dev and prod alike.
+    const raf = requestAnimationFrame(() => {
+      if (cancelled) return;
 
-      mm.add(
-        { isReduced: "(prefers-reduced-motion: reduce)" },
-        (context) => {
-          const { isReduced } = context.conditions as { isReduced: boolean };
+      const ctx = gsap.context(() => {
+        const isReduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
 
-          if (isReduced) {
-            // Skip the scripted story entirely: jump straight to the resting
-            // state (final headline + CTA) so no motion is ever forced.
-            gsap.set(
-              [
-                eletricistaRef.current,
-                text1Ref.current,
-                programadorRef.current,
-                text2Ref.current,
-                badgeRef.current,
-                logoDesconstruidaRef.current,
-                scrollHintRef.current,
-              ],
-              { autoAlpha: 0 },
-            );
-            gsap.set(logoCleanRef.current, { autoAlpha: 1, scale: 1 });
-            gsap.set(finalContentRef.current, { autoAlpha: 1, y: 0 });
-            return;
-          }
+        if (isReduced) {
+          // Skip the scripted story entirely: jump straight to the resting
+          // state (final headline + CTA) so no motion is ever forced.
+          gsap.set(
+            [
+              eletricistaRef.current,
+              text1Ref.current,
+              programadorRef.current,
+              text2Ref.current,
+              badgeRef.current,
+              logoDesconstruidaRef.current,
+              scrollHintRef.current,
+            ],
+            { autoAlpha: 0 },
+          );
+          gsap.set(logoCleanRef.current, { autoAlpha: 1, scale: 1 });
+          gsap.set(finalContentRef.current, { autoAlpha: 1, y: 0 });
+          return;
+        }
 
-          // Baseline visible/hidden state already lives in the JSX
-          // className (invisible/opacity-0) so there is no flash of
-          // overlapping content before this effect ever runs; these tweens
-          // only need to animate away from that baseline.
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: "+=400%",
-              scrub: 1,
-              pin: true,
-              anticipatePin: 1,
-            },
-          });
+        // Baseline visible/hidden state already lives in the JSX className
+        // (invisible/opacity-0 -- the exact pair GSAP's own `autoAlpha`
+        // toggles) so there is no flash of overlapping content before this
+        // effect ever runs; these tweens only animate away from that
+        // baseline, they don't own it exclusively.
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "+=400%",
+            scrub: 1,
+            pin: true,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        });
 
-          tl.to(scrollHintRef.current, { autoAlpha: 0, duration: 0.15 }, 0.05)
+        // Background wires drift slower than the foreground the whole way
+        // through the pin -- a continuous, linear (scrub-tied) parallax.
+        tl.fromTo(
+          bgFiosRef.current,
+          { yPercent: 0 },
+          { yPercent: -18, ease: "none", duration: 4 },
+          0,
+        );
+
+        tl.to(scrollHintRef.current, { autoAlpha: 0, duration: 0.15 }, 0.05)
             // Phase 1 -> 2: eletricista crossfades into programador
             .to(
               text1Ref.current,
@@ -94,16 +123,30 @@ export function Hero() {
             )
             .to(badgeRef.current, { autoAlpha: 0, scale: 0.95, duration: 0.3 }, 2.15)
             .to(programadorRef.current, { autoAlpha: 0, duration: 0.4 }, 2.15)
-            // Phase 4: deconstructed logo converges into the clean mark
+            // Phase 4: shattered fragments fly together and assemble the
+            // deconstructed logo, which itself fades/settles as a whole
             .fromTo(
               logoDesconstruidaRef.current,
-              { autoAlpha: 0, scale: 1.2, rotate: -3, filter: "blur(6px)" },
+              { autoAlpha: 0, filter: "blur(4px)" },
+              { autoAlpha: 1, filter: "blur(0px)", duration: 0.6 },
+              2.5,
+            )
+            .fromTo(
+              fragmentRefs.current,
               {
-                autoAlpha: 1,
-                scale: 1,
+                x: (i: number) => FRAGMENT_SCATTER[i].x,
+                y: (i: number) => FRAGMENT_SCATTER[i].y,
+                rotate: (i: number) => FRAGMENT_SCATTER[i].rotate,
+                opacity: 0,
+              },
+              {
+                x: 0,
+                y: 0,
                 rotate: 0,
-                filter: "blur(0px)",
-                duration: 0.6,
+                opacity: 1,
+                duration: 0.7,
+                stagger: 0.03,
+                ease: "power2.out",
               },
               2.5,
             )
@@ -130,15 +173,25 @@ export function Hero() {
               { autoAlpha: 1, y: 0, duration: 0.5 },
               3.5,
             );
-        },
-      );
 
-      const onLoad = () => ScrollTrigger.refresh();
-      window.addEventListener("load", onLoad);
-      return () => window.removeEventListener("load", onLoad);
-    }, section);
+        // Belt-and-suspenders: re-measure once more after this tick in case
+        // fonts/images are still settling the layout.
+        ScrollTrigger.refresh();
+      }, section);
 
-    return () => ctx.revert();
+      ctxRef.current = ctx;
+    });
+
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener("load", onLoad);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("load", onLoad);
+      ctxRef.current?.revert();
+      ctxRef.current = null;
+    };
   }, []);
 
   return (
@@ -146,7 +199,10 @@ export function Hero() {
       ref={sectionRef}
       className="relative h-screen w-full overflow-hidden bg-background"
     >
-      <div className="absolute inset-0">
+      <div
+        ref={bgFiosRef}
+        className="absolute inset-x-0 -inset-y-[15%] overflow-hidden"
+      >
         <Image
           src="/assets/hero/background-fios.png"
           alt=""
@@ -155,8 +211,8 @@ export function Hero() {
           sizes="100vw"
           className="object-cover opacity-30"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
       </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
 
       {/* Phase 1: eletricista (visible by default) */}
       <div
@@ -191,19 +247,47 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Phase 4a: deconstructed logo */}
+      {/* Phase 4a: deconstructed logo -- tiled into a grid of independent
+          fragments so GSAP can scatter/converge each piece separately. */}
       <div
         ref={logoDesconstruidaRef}
         className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
-        <div className="relative h-[70%] w-[70%] max-w-xl">
-          <Image
-            src="/assets/hero/logo-desconstruida-devclub.jpg"
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 576px, 70vw"
-            className="object-contain"
-          />
+        <div className="relative h-[70%] w-[70%] max-w-xl [perspective:800px]">
+          {Array.from({
+            length: FRAGMENT_GRID.rows * FRAGMENT_GRID.cols,
+          }).map((_, i) => {
+            const row = Math.floor(i / FRAGMENT_GRID.cols);
+            const col = i % FRAGMENT_GRID.cols;
+            return (
+              <div
+                key={i}
+                className="absolute overflow-hidden"
+                style={{
+                  width: `${100 / FRAGMENT_GRID.cols}%`,
+                  height: `${100 / FRAGMENT_GRID.rows}%`,
+                  left: `${(col * 100) / FRAGMENT_GRID.cols}%`,
+                  top: `${(row * 100) / FRAGMENT_GRID.rows}%`,
+                }}
+              >
+                <div
+                  ref={(el) => {
+                    fragmentRefs.current[i] = el;
+                  }}
+                  className="absolute"
+                  style={{
+                    width: `${FRAGMENT_GRID.cols * 100}%`,
+                    height: `${FRAGMENT_GRID.rows * 100}%`,
+                    left: `${-col * 100}%`,
+                    top: `${-row * 100}%`,
+                    backgroundImage:
+                      "url(/assets/hero/logo-desconstruida-devclub.jpg)",
+                    backgroundSize: "100% 100%",
+                  }}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 

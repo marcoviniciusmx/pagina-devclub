@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+} from "framer-motion";
+import { Reveal } from "@/components/ui/Reveal";
 
 function useTilt() {
   const reduceMotion = useReducedMotion();
@@ -9,6 +16,11 @@ function useTilt() {
   const rotateYRaw = useMotionValue(0);
   const rotateX = useSpring(rotateXRaw, { stiffness: 200, damping: 20 });
   const rotateY = useSpring(rotateYRaw, { stiffness: 200, damping: 20 });
+  // Background shifts opposite/independent of the card's own rotation, like
+  // a holographic foil catching the light at a different rate than the
+  // surface it's printed on.
+  const bgX = useTransform(rotateY, [-10, 10], [18, -18]);
+  const bgY = useTransform(rotateX, [-10, 10], [-18, 18]);
 
   const onMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (reduceMotion) return;
@@ -24,31 +36,36 @@ function useTilt() {
     rotateYRaw.set(0);
   };
 
-  return { rotateX, rotateY, onMouseMove, onMouseLeave };
+  return { rotateX, rotateY, bgX, bgY, onMouseMove, onMouseLeave };
 }
 
 function MecCard() {
-  const { rotateX, rotateY, onMouseMove, onMouseLeave } = useTilt();
+  const { rotateX, rotateY, bgX, bgY, onMouseMove, onMouseLeave } = useTilt();
 
   return (
     <motion.div
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
       style={{ rotateX, rotateY, transformPerspective: 1000 }}
-      className="group relative col-span-1 flex min-h-[26rem] flex-col overflow-hidden rounded-3xl border border-border-soft lg:col-span-3"
+      className="group relative flex h-full min-h-[26rem] flex-col overflow-hidden rounded-3xl border border-border-soft"
     >
-      <div className="absolute inset-0">
-        <Image
-          src="/assets/bento/molde-neon.png"
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 60vw, 100vw"
-          className="object-cover opacity-80 transition-transform duration-700 ease-out group-hover:scale-105"
-        />
+      <div className="absolute -inset-[5%] overflow-hidden">
+        <motion.div style={{ x: bgX, y: bgY }} className="absolute inset-0">
+          <Image
+            src="/assets/bento/molde-neon.png"
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 60vw, 100vw"
+            className="object-cover opacity-80 transition-transform duration-700 ease-out group-hover:scale-105"
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex h-full flex-col justify-between p-8 sm:p-10">
+      <div
+        style={{ transformStyle: "preserve-3d" }}
+        className="relative z-10 flex h-full flex-col justify-between p-8 sm:p-10"
+      >
         <div className="max-w-md">
           <p className="mb-4 font-heading text-xs font-medium uppercase tracking-[0.3em] text-accent">
             Formação com Chancela Oficial
@@ -64,7 +81,10 @@ function MecCard() {
             Diploma oficial ao final da jornada, com validade em todo o
             território nacional.
           </p>
-          <div className="relative h-20 w-20 shrink-0 sm:h-24 sm:w-24">
+          <div
+            style={{ transform: "translateZ(40px)" }}
+            className="relative h-20 w-20 shrink-0 sm:h-24 sm:w-24"
+          >
             <Image
               src="/assets/bento/selo-mec.png"
               alt="Selo do Ministério da Educação"
@@ -81,7 +101,7 @@ function MecCard() {
 
 function PlatformCard() {
   return (
-    <div className="glass relative col-span-1 flex min-h-[26rem] flex-col justify-between overflow-hidden rounded-3xl p-8 sm:p-10 lg:col-span-2">
+    <div className="glass relative flex h-full min-h-[26rem] flex-col justify-between overflow-hidden rounded-3xl p-8 sm:p-10">
       <div>
         <p className="mb-4 font-heading text-xs font-medium uppercase tracking-[0.3em] text-accent">
           Plataforma & Prática
@@ -127,8 +147,12 @@ export function BentoGrid() {
         </h2>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <MecCard />
-        <PlatformCard />
+        <Reveal className="lg:col-span-3">
+          <MecCard />
+        </Reveal>
+        <Reveal delay={0.1} className="lg:col-span-2">
+          <PlatformCard />
+        </Reveal>
       </div>
     </section>
   );

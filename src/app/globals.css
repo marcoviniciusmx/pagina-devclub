@@ -30,8 +30,6 @@
   --color-accent-foreground: var(--color-accent-foreground);
   --font-heading: var(--font-space-grotesk);
   --font-body: var(--font-dm-sans);
-  --animate-marquee: marquee 32s linear infinite;
-  --animate-marquee-fast: marquee 18s linear infinite;
 }
 
 @layer base {
@@ -89,6 +87,32 @@
       transparent
     );
   }
+
+  /* Light sweeping around the border: a conic-gradient ring clipped to a
+     hairline via the padding+mask-composite trick, spun via `transform`
+     (not the gradient's own angle) so no `@property` registration is
+     needed for smooth interpolation. */
+  .border-beam {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 260deg,
+      #ffffff 300deg,
+      var(--color-accent) 328deg,
+      transparent 350deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: border-beam-spin 2.4s linear infinite;
+    animation-play-state: paused;
+  }
 }
 
 @keyframes marquee {
@@ -97,6 +121,12 @@
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes border-beam-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

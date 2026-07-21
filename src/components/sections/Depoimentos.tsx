@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Play, X } from "lucide-react";
 import { testimonials, type Testimonial } from "@/lib/data";
+import { Reveal } from "@/components/ui/Reveal";
 
 function VideoModal({
   testimonial,
@@ -43,9 +44,9 @@ function VideoModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-background-pure/85 p-4 backdrop-blur-md sm:p-8"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        initial={{ opacity: 0, scale: 0.9, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        exit={{ opacity: 0, scale: 0.92, y: 8 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
         onClick={(event) => event.stopPropagation()}
         className="relative w-full max-w-3xl"
@@ -91,39 +92,43 @@ export function Depoimentos() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {testimonials.map((testimonial, index) => (
-          <button
+          <Reveal
             key={`${testimonial.studentName}-${index}`}
-            type="button"
-            onClick={() => setActiveIndex(index)}
-            className="group relative flex aspect-[9/12] cursor-pointer flex-col justify-end overflow-hidden rounded-2xl border border-border text-left transition-colors duration-300 hover:border-accent/50"
+            delay={index * 0.08}
           >
-            <Image
-              src={testimonial.thumbnail}
-              alt=""
-              fill
-              sizes="(min-width: 640px) 33vw, 90vw"
-              className="object-cover opacity-70 transition-transform duration-500 ease-out group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/10" />
+            <button
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className="group relative flex aspect-[9/12] w-full cursor-pointer flex-col justify-end overflow-hidden rounded-2xl border border-border text-left transition-colors duration-300 hover:border-accent/50"
+            >
+              <Image
+                src={testimonial.thumbnail}
+                alt=""
+                fill
+                sizes="(min-width: 640px) 33vw, 90vw"
+                className="object-cover opacity-70 transition-transform duration-500 ease-out group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/10" />
 
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="glass glow-accent flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:scale-110">
-                <Play
-                  className="ml-1 h-6 w-6 fill-accent text-accent"
-                  aria-hidden="true"
-                />
-              </span>
-            </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="glass glow-accent flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-300 ease-out group-hover:scale-110">
+                  <Play
+                    className="ml-1 h-6 w-6 fill-accent text-accent"
+                    aria-hidden="true"
+                  />
+                </span>
+              </div>
 
-            <div className="relative z-10 p-5">
-              <p className="font-heading text-sm font-semibold text-foreground">
-                {testimonial.studentName}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {testimonial.role}
-              </p>
-            </div>
-          </button>
+              <div className="relative z-10 p-5">
+                <p className="font-heading text-sm font-semibold text-foreground">
+                  {testimonial.studentName}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {testimonial.role}
+                </p>
+              </div>
+            </button>
+          </Reveal>
         ))}
       </div>
 

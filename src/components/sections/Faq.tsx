@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { faqItems } from "@/lib/data";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -20,7 +21,7 @@ export function Faq() {
         </h2>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <Reveal className="flex flex-col gap-3">
         {faqItems.map((item, index) => {
           const isOpen = index === openIndex;
           const panelId = `faq-panel-${index}`;
@@ -43,11 +44,11 @@ export function Faq() {
                   <span className="font-heading text-base font-medium text-foreground sm:text-lg">
                     {item.question}
                   </span>
-                  <ChevronDown
+                  <Plus
                     aria-hidden="true"
                     className={cn(
                       "h-5 w-5 shrink-0 text-accent transition-transform duration-300",
-                      isOpen && "rotate-180",
+                      isOpen && "rotate-45",
                     )}
                   />
                 </button>
@@ -73,7 +74,7 @@ export function Faq() {
             </div>
           );
         })}
-      </div>
+      </Reveal>
     </section>
   );
 }

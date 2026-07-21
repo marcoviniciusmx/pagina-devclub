@@ -23,7 +23,11 @@ export function NeonButton({
       )}
       {...props}
     >
-      {children}
+      <span
+        aria-hidden="true"
+        className="border-beam pointer-events-none opacity-0 transition-opacity duration-300 [animation-play-state:paused] group-hover:opacity-100 group-hover:[animation-play-state:running]"
+      />
+      <span className="relative">{children}</span>
     </a>
   );
 }

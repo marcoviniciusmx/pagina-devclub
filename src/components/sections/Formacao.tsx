@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { gradeAreas } from "@/lib/data";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function Formacao() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -20,7 +21,7 @@ export function Formacao() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <Reveal className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {gradeAreas.map((area, index) => {
           const isActive = index === activeIndex;
 
@@ -29,6 +30,7 @@ export function Formacao() {
               key={area.title}
               type="button"
               onClick={() => setActiveIndex(index)}
+              onMouseEnter={() => setActiveIndex(index)}
               aria-expanded={isActive}
               className={cn(
                 "group relative cursor-pointer overflow-hidden rounded-2xl border p-6 text-left transition-colors duration-300",
@@ -85,7 +87,7 @@ export function Formacao() {
             </button>
           );
         })}
-      </div>
+      </Reveal>
     </section>
   );
 }

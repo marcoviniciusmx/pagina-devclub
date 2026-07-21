@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { mentors } from "@/lib/data";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function Mentoria() {
   return (
@@ -14,30 +15,31 @@ export function Mentoria() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {mentors.map((mentor) => (
-          <div
-            key={mentor.name}
-            className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface/40 transition-all duration-300 hover:border-accent/60 hover:shadow-[0_0_50px_-12px_var(--color-accent-glow)]"
-          >
-            <div className="relative h-56 w-full overflow-hidden sm:h-64">
-              <div className="absolute inset-0 bg-gradient-to-b from-accent/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <Image
-                src={mentor.image}
-                alt={mentor.name}
-                fill
-                sizes="(min-width: 1024px) 230px, (min-width: 640px) 33vw, 45vw"
-                className="object-contain object-bottom transition-transform duration-500 ease-out group-hover:scale-105"
-              />
+        {mentors.map((mentor, index) => (
+          <Reveal key={mentor.name} delay={index * 0.06}>
+            <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface/40 transition-shadow duration-300 hover:shadow-[0_0_50px_-12px_var(--color-accent-glow)] hover:border-accent/60">
+              <div className="relative h-56 w-full overflow-hidden sm:h-64">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-32 w-32 rounded-full bg-accent/0 blur-3xl transition-colors duration-300 group-hover:bg-accent/30" />
+                </div>
+                <Image
+                  src={mentor.image}
+                  alt={mentor.name}
+                  fill
+                  sizes="(min-width: 1024px) 230px, (min-width: 640px) 33vw, 45vw"
+                  className="relative object-contain object-bottom transition-transform duration-500 ease-out group-hover:scale-105"
+                />
+              </div>
+              <div className="relative border-t border-border-soft bg-surface/80 p-4">
+                <h3 className="font-heading text-sm font-semibold text-foreground">
+                  {mentor.name}
+                </h3>
+                <p className="mt-1 text-xs leading-snug text-muted-foreground">
+                  {mentor.role}
+                </p>
+              </div>
             </div>
-            <div className="relative border-t border-border-soft bg-surface/80 p-4">
-              <h3 className="font-heading text-sm font-semibold text-foreground">
-                {mentor.name}
-              </h3>
-              <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                {mentor.role}
-              </p>
-            </div>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>
