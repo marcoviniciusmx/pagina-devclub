@@ -230,7 +230,7 @@ function TypewriterCode() {
   }, [reduceMotion]);
 
   return (
-    <div className="glass w-full max-w-[13rem] rounded-lg border border-border-soft p-3 shadow-xl">
+    <div className="glass w-full max-w-[9.5rem] rounded-lg border border-border-soft p-3 shadow-xl sm:max-w-[13rem]">
       <div className="mb-2 flex items-center gap-1.5">
         <span className="h-2 w-2 rounded-full bg-[#ff5f56]" />
         <span className="h-2 w-2 rounded-full bg-[#ffbd2e]" />
@@ -311,11 +311,11 @@ function PlatformCard() {
 
       <div
         style={{ perspective: 1000 }}
-        className="relative mt-10 h-56 w-full sm:h-64"
+        className="relative mt-10 h-72 w-full sm:h-64"
       >
         <motion.div
           style={{ x: backX, y: backY, z: 0 }}
-          className="glow-accent absolute inset-x-2 bottom-0 h-44 overflow-hidden rounded-xl border border-border shadow-2xl sm:h-52"
+          className="glow-accent absolute inset-x-2 bottom-0 h-40 overflow-hidden rounded-xl border border-border shadow-2xl sm:h-52"
         >
           <Image
             src="/assets/bento/interface-devclub.png"
@@ -327,7 +327,7 @@ function PlatformCard() {
         </motion.div>
         <motion.div
           style={{ x: frontX, y: frontY, z: 40 }}
-          className="absolute inset-x-0 top-0 h-40 w-[85%] overflow-hidden rounded-xl border border-border-soft shadow-xl sm:h-48"
+          className="absolute inset-x-0 top-0 h-32 w-[68%] overflow-hidden rounded-xl border border-border-soft shadow-xl sm:h-48 sm:w-[85%]"
         >
           <Image
             src="/assets/bento/playground-devlcub.png"
@@ -338,7 +338,11 @@ function PlatformCard() {
           />
         </motion.div>
 
-        <div className="absolute -right-2 -bottom-4 z-10 sm:-right-4 sm:-bottom-6">
+        {/* Pinned fully inside the card's own bounds on mobile (no
+            negative offset) so it never crops against the card's rounded
+            corner at narrow widths -- the "poking out" flourish only
+            applies from `sm` up, where there's enough width to spare. */}
+        <div className="absolute right-0 bottom-0 z-10 sm:-right-4 sm:-bottom-6">
           <TypewriterCode />
         </div>
       </div>

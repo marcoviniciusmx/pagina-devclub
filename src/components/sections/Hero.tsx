@@ -17,16 +17,6 @@ const radialFadeMask: CSSProperties = {
   maskImage: "radial-gradient(ellipse at center, black 40%, transparent 80%)",
 };
 
-// The eletricista photo is deliberately cropped mid-arm by `object-cover`
-// (his hand extends off-frame on purpose), but a hard rectangular clip line
-// cutting across a moving arm reads as an obvious digital paste rather than
-// the arm just extending out of frame. This fades the crop's left edge into
-// the section's own dark background instead, so the cut dissolves rather
-// than showing a seam.
-const eletricistaFadeMask: CSSProperties = {
-  WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 15%)",
-  maskImage: "linear-gradient(to right, transparent 0%, black 15%)",
-};
 
 // 2x2 -- one fragment per screen corner, matching the brief literally
 // ("origem nas 4 pontas") instead of splitting a middle column awkwardly
@@ -34,9 +24,11 @@ const eletricistaFadeMask: CSSProperties = {
 const FRAGMENT_GRID = { cols: 2, rows: 2 };
 
 // Each fragment is assigned to the screen corner matching its grid quadrant
-// (top-left, top-right, bottom-left, bottom-right), then scattered far
-// enough past the viewport edge (vw/vh-based, not a fixed pixel guess) that
-// it starts fully offscreen regardless of viewport size.
+// (top-left, top-right, bottom-left, bottom-right) and starts at exactly
+// 80% of the viewport width/height past center in that direction -- i.e.
+// out past the real screen edge, not just past its own small parent's
+// edge -- so it has to visibly travel in from the corner instead of
+// fading in already close to the center.
 function getFragmentOrigin(i: number, vw: number, vh: number) {
   const row = Math.floor(i / FRAGMENT_GRID.cols);
   const col = i % FRAGMENT_GRID.cols;
@@ -44,9 +36,8 @@ function getFragmentOrigin(i: number, vw: number, vh: number) {
   const yDir = row === 0 ? -1 : 1;
 
   return {
-    x: xDir * (vw * 0.65 + col * 40),
-    y: yDir * (vh * 0.65 + row * 30),
-    rotate: xDir * yDir * (18 + col * 4),
+    x: xDir * vw * 0.8,
+    y: yDir * vh * 0.8,
     rotateX: yDir * -55,
     rotateY: xDir * 55,
   };
@@ -71,12 +62,6 @@ export function Hero() {
   const rodolfoFinalRef = useRef<HTMLDivElement>(null);
   const scrollHintRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<gsap.Context | null>(null);
-  // Guards the logo auto-play handoff below (see AUTO_PLAY_START_TIME).
-  // Fires exactly once, ever, per mount -- once true it stays true, so the
-  // scene never auto-replays. Reversing (scroll up) is unaffected by this
-  // flag: it's handled entirely by GSAP's native scrub, which stays fully
-  // bidirectional the whole time.
-  const autoPlayDoneRef = useRef(false);
   // The header mark is portaled to <body> (see JSX below) so it never ends
   // up nested inside the pinned section -- ScrollTrigger pins by applying a
   // CSS transform to the pinned element, and a `transform` on an ancestor
@@ -154,34 +139,10 @@ export function Hero() {
         // constant so the background parallax -- the only tween that spans
         // the entire ride -- can be told to last exactly as long as the
         // story does, instead of freezing early if the story grows).
-        const HERO_TIMELINE_DURATION = 9.3;
-
-        // Each scene's fully-settled "hold" moment (see the `.to`/`.fromTo`
-        // calls below for the matching beat numbers), expressed as a
-        // fraction of the total so ScrollTrigger's `snap` can lock onto
-        // them. This is deliberately NOT an even [0, 0.25, 0.5, 0.75, 1]
-        // split -- the scenes below aren't evenly spaced in time, so an
-        // even split would snap the user mid-transition (e.g. mid-flight
-        // shards frozen half-assembled) instead of onto a settled scene.
-        const SNAP_POINTS = [
-          0, // top, eletricista's opening beat
-          0.4 / HERO_TIMELINE_DURATION, // eletricista, fully read
-          2.0 / HERO_TIMELINE_DURATION, // "...contratado pelo Santander"
-          3.35 / HERO_TIMELINE_DURATION, // OpenAI turning-point scene
-          6.4 / HERO_TIMELINE_DURATION, // logo fused, vortex settling out
-          7.9 / HERO_TIMELINE_DURATION, // founding headline + Rodolfo, pre-dock
-          1, // logo docked in the header
-        ];
-
-        // The exact beat where the deconstructed logo begins assembling
-        // (matches the fragments' `.fromTo` call below, at 4.65). Up to this
-        // point the story stays 100% scroll-scrubbed; once the user's
-        // forward scroll carries the timeline past it, the rest of the
-        // sequence (fusion, final headline, header dock) plays itself out
-        // automatically instead of demanding ~5 more units of manual
-        // scrolling to watch it land.
-        const AUTO_PLAY_START_TIME = 4.65;
-        const AUTO_PLAY_DURATION = 2.8;
+        // The last real beat (header docking) lands at 9.6; everything
+        // from there to 11 is deliberate silent tail, not a beat -- see
+        // the `end` comment below for why it needs to be this long.
+        const HERO_TIMELINE_DURATION = 11;
 
         // Baseline visible/hidden state already lives in the JSX className
         // (invisible/opacity-0 -- the exact pair GSAP's own `autoAlpha`
@@ -192,63 +153,56 @@ export function Hero() {
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            // Pixel-based (not a bare percentage) so there's no ambiguity
-            // about what the percentage is relative to -- this is what was
-            // causing the pin to never release: "+=400%" wasn't resolving
-            // to a distance the user could actually scroll past. 10x the
-            // viewport gives every phase real room to breathe, and the
-            // `snap` below forces a full stop on each scene even if the
-            // user flings the wheel hard.
-            end: () => "+=" + window.innerHeight * 10,
-            // A very heavy scrub so the timeline keeps gliding toward the
-            // scrollbar's target well after the wheel stops -- the whole
-            // point being that no matter how fast the user scrolls, the
-            // motion itself never feels rushed or cut.
-            scrub: 3.5,
+            // "+=880vh" of scroll for the entire pinned story -- expressed
+            // in pixels (not the literal percentage string) for the same
+            // reason noted before: measuring a bare percentage before
+            // layout has fully settled is what previously caused the pin
+            // to never release. `invalidateOnRefresh` + the one-frame
+            // defer this effect already runs behind guards against that
+            // either way. Stretching the track this much (up from 350vh)
+            // is what turns each scene into an unhurried, cinematic beat --
+            // scrub ties timeline time directly to scroll fraction, so a
+            // longer track means the user must scroll noticeably more to
+            // advance each phase, without touching any of the relative
+            // pacing between beats below. The 80vh-per-unit ratio here
+            // (880/11) matches the previous 800/10 exactly -- only the
+            // trailing silent tail grew, nothing else re-paced.
+            end: () => "+=" + window.innerHeight * 8.8,
+            // Filmic weight: at `scrub: 2`, the timeline's playhead takes
+            // a full ~2s to ease into wherever the scrollbar currently is.
+            // A fast fling no longer produces an instant jump-cut -- it
+            // just queues up a longer, still-smooth glide to that point.
+            // Still 100% manual otherwise: `scrub` only ever eases the
+            // TIMELINE's own playhead toward wherever the scrollbar
+            // already is -- it never moves the scrollbar itself. So no
+            // matter how the user got to a given scroll position (a slow
+            // drag or a hard fling), the animation is always a direct,
+            // damped function of real scroll position, in both
+            // directions, with no independent motion of its own. No
+            // `snap`, no `onUpdate`, no `tweenTo` -- there is nothing left
+            // in this config that can move on its own.
+            scrub: 2,
             pin: true,
             pinSpacing: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
-            snap: {
-              snapTo: SNAP_POINTS,
-              duration: { min: 0.8, max: 1.5 },
-              delay: 0.1,
-              ease: "power3.inOut",
-            },
-            // The scroll-scrubbed -> auto-play handoff, one-way and one-time
-            // only. `scrub` re-targets the timeline on every scroll event,
-            // so simply calling `tl.play()` here would just get overridden
-            // the next time the user's wheel fires. Instead: freeze this
-            // trigger exactly where it is (`disable(false)` keeps the pin
-            // as-is, doesn't revert it) and lock page scroll for the
-            // handful of seconds the auto-play needs, so nothing can fight
-            // the tween. Once it lands, scroll position is synced forward
-            // to match (visually a no-op, since the timeline is already
-            // showing that exact end state) and control is handed back --
-            // permanently, via `autoPlayDoneRef` -- for the ride into the
-            // next section. Scrolling back UP past this point afterward is
-            // untouched by any of this: native `scrub` already runs both
-            // directions, so reversing the story is just... scrolling up.
-            onUpdate: (self) => {
-              if (autoPlayDoneRef.current) return;
-              if (self.direction !== 1) return;
-              if (self.progress * HERO_TIMELINE_DURATION < AUTO_PLAY_START_TIME)
-                return;
-
-              autoPlayDoneRef.current = true;
-              const previousOverflow = document.documentElement.style.overflow;
-              document.documentElement.style.overflow = "hidden";
-              self.disable(false);
-
-              tl.tweenTo(HERO_TIMELINE_DURATION, {
-                duration: AUTO_PLAY_DURATION,
-                ease: "power2.inOut",
-                onComplete: () => {
-                  document.documentElement.style.overflow = previousOverflow;
-                  window.scrollTo({ top: self.end });
-                  self.enable();
-                },
-              });
+            // Safety net for the header hand-off: `scrub: 2` means the
+            // timeline's playhead can still be lagging up to ~2s behind a
+            // fast fling. The 1.4-unit (~112vh) silent tail after docking
+            // (9.6 -> 11) absorbs that lag in the overwhelming majority of
+            // cases, but a hard-enough fling (or a synthetic instant
+            // scrollTo) can still outrun it and cross `end` -- unpinning
+            // the section -- before the eased tween visually finishes.
+            // Without this, that leaves the assembled logo stuck mid-air
+            // (wrong position/scale, header mark not yet faded in) as the
+            // section scrolls away: exactly the "piscar/desaparecer" bug.
+            // `onLeave` snaps both elements straight to their true resting
+            // state the instant that boundary is crossed -- a direct,
+            // immediate response to the user's own scroll, not an
+            // independent animation, so it doesn't reintroduce autoplay.
+            onLeave: () => {
+              gsap.set(logoCleanRef.current, { autoAlpha: 0 });
+              gsap.set(headerLogoRef.current, { autoAlpha: 1, scale: 1 });
             },
           },
         });
@@ -271,76 +225,79 @@ export function Hero() {
             { autoAlpha: 0, duration: 0.15, ease: "power2.out" },
             0.05,
           )
-            // Phase 1 (hold ~0.9 -> 0.7 units of pure static read) -> 2:
-            // eletricista crossfades into programador.
+            // Pausa 1 (a história do Rodolfo) -- eletricista holds fully
+            // static and readable for ~1.3 units (roughly 45vh of scroll)
+            // before crossfading into programador.
             .to(
               text1Ref.current,
-              { autoAlpha: 0, y: -24, duration: 0.4, ease: "power2.inOut" },
-              0.9,
+              { autoAlpha: 0, y: -24, duration: 0.35, ease: "power2.inOut" },
+              1.3,
             )
+            // Pure opacity crossfade -- Rodolfo's photo never scales or
+            // moves during scene changes, only fades.
             .to(
               eletricistaRef.current,
-              { autoAlpha: 0, scale: 1.04, duration: 0.45, ease: "power2.inOut" },
-              0.95,
+              { autoAlpha: 0, duration: 0.4, ease: "power2.inOut" },
+              1.35,
             )
             .to(
               programadorRef.current,
-              { autoAlpha: 1, duration: 0.45, ease: "power3.out" },
-              1.0,
+              { autoAlpha: 1, duration: 0.4, ease: "power3.out" },
+              1.4,
             )
             .fromTo(
               text2Ref.current,
               { autoAlpha: 0, y: 24 },
-              { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out" },
-              1.15,
+              { autoAlpha: 1, y: 0, duration: 0.35, ease: "power3.out" },
+              1.55,
             )
-            // Phase 2 hold (~0.9 units), then -> Phase 3: OpenAI turning
-            // point (headline + data dressing + badge).
+            // Programador holds (~1.1 units) before crossfading into the
+            // OpenAI turning-point scene.
             .to(
               text2Ref.current,
-              { autoAlpha: 0, y: -24, duration: 0.35, ease: "power2.inOut" },
-              2.45,
+              { autoAlpha: 0, y: -24, duration: 0.3, ease: "power2.inOut" },
+              3.0,
             )
             .to(
               programadorRef.current,
-              { autoAlpha: 0, duration: 0.4, ease: "power2.inOut" },
-              2.5,
+              { autoAlpha: 0, duration: 0.35, ease: "power2.inOut" },
+              3.05,
             )
             .to(
               openaiPhotoRef.current,
-              { autoAlpha: 1, duration: 0.45, ease: "power3.out" },
-              2.5,
+              { autoAlpha: 1, duration: 0.4, ease: "power3.out" },
+              3.05,
             )
             .fromTo(
               badgeRef.current,
               { autoAlpha: 0, y: 16, scale: 0.9 },
-              { autoAlpha: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" },
-              2.5,
+              { autoAlpha: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" },
+              3.05,
             )
-            // Phase 3 hold (~0.9 units) -- the turning-point scene gets to
-            // actually land before the vortex/assembly sequence begins.
+            // OpenAI turning-point scene holds (~1.2 units) -- the last beat
+            // of "a história do Rodolfo" gets to land before the logo story
+            // begins.
             .to(
               badgeRef.current,
               { autoAlpha: 0, scale: 0.95, duration: 0.3, ease: "power2.inOut" },
-              3.8,
+              4.6,
             )
             .to(
               openaiPhotoRef.current,
-              { autoAlpha: 0, duration: 0.4, ease: "power2.inOut" },
-              3.8,
+              { autoAlpha: 0, duration: 0.35, ease: "power2.inOut" },
+              4.6,
             )
-            // Phase 3b: a pulsing neon data core builds tension between the
-            // badge reveal and the shard assembly -- the "turning point"
-            // moment the shards will fly into and the logo will fuse out of.
+            // Pausa 2 (desestruturação / construção da logo) -- a pulsing
+            // data core builds tension, then the shattered fragments fly
+            // together into the deconstructed logo over a wide ~2.5-unit
+            // window (~87vh) so each piece uniting is actually felt as the
+            // user scrolls, instead of resolving in one quick blip.
             .fromTo(
               vortexRef.current,
               { autoAlpha: 0, scale: 0.6 },
-              { autoAlpha: 1, scale: 1, duration: 0.7, ease: "power2.out" },
-              3.95,
+              { autoAlpha: 1, scale: 1, duration: 0.6, ease: "power2.out" },
+              4.75,
             )
-            // Phase 4: shattered fragments fly together into the vortex and
-            // assemble the deconstructed logo, which itself fades/settles
-            // as a whole.
             .fromTo(
               logoDesconstruidaRef.current,
               { autoAlpha: 0, scale: 1.3, filter: "blur(10px)" },
@@ -348,10 +305,10 @@ export function Hero() {
                 autoAlpha: 1,
                 scale: 1,
                 filter: "blur(0px)",
-                duration: 0.7,
+                duration: 0.55,
                 ease: "power3.out",
               },
-              4.65,
+              5.45,
             )
             .fromTo(
               fragmentRefs.current,
@@ -362,16 +319,18 @@ export function Hero() {
                 y: (i: number) =>
                   getFragmentOrigin(i, window.innerWidth, window.innerHeight)
                     .y,
-                rotate: (i: number) =>
-                  getFragmentOrigin(i, window.innerWidth, window.innerHeight)
-                    .rotate,
+                // A random spin per shard (instead of one fixed angle per
+                // corner) so the 4 pieces don't read as a mirrored/uniform
+                // pattern converging in -- each looks like an independent
+                // shard of glass tumbling toward the same point.
+                rotate: "random(-360, 360)",
                 rotateX: (i: number) =>
                   getFragmentOrigin(i, window.innerWidth, window.innerHeight)
                     .rotateX,
                 rotateY: (i: number) =>
                   getFragmentOrigin(i, window.innerWidth, window.innerHeight)
                     .rotateY,
-                scale: 0.5,
+                scale: 0.2,
                 opacity: 0,
               },
               {
@@ -382,32 +341,29 @@ export function Hero() {
                 rotateY: 0,
                 scale: 1,
                 opacity: 1,
-                duration: 0.8,
-                stagger: 0.04,
+                duration: 1.55,
+                stagger: 0.1,
                 ease: "power3.out",
               },
-              4.65,
+              5.45,
             )
-            // A short beat after the shards land (~0.18 units) before the
-            // fusion flash fires -- long enough to register as an
-            // intentional pause, not a hard cut.
-            // Phase 4b: fusion -- the vortex core flashes bright right as
-            // the shards finish consolidating, then the deconstructed logo
-            // dissolves into the clean official mark through that flash.
+            // Fusion -- the vortex core flashes bright right as the shards
+            // finish consolidating, then the deconstructed logo dissolves
+            // into the clean official mark through that flash.
             .to(
               vortexCoreRef.current,
-              { scale: 1.9, duration: 0.25, ease: "power2.out" },
-              5.75,
+              { scale: 1.9, duration: 0.2, ease: "power2.out" },
+              7.2,
             )
             .to(
               vortexCoreRef.current,
-              { scale: 1, duration: 0.45, ease: "power2.inOut" },
-              6.0,
+              { scale: 1, duration: 0.35, ease: "power2.inOut" },
+              7.45,
             )
             .to(
               logoDesconstruidaRef.current,
-              { autoAlpha: 0, scale: 0.92, duration: 0.55, ease: "power2.inOut" },
-              5.8,
+              { autoAlpha: 0, scale: 0.92, duration: 0.4, ease: "power2.inOut" },
+              7.2,
             )
             .fromTo(
               logoCleanRef.current,
@@ -416,57 +372,59 @@ export function Hero() {
                 autoAlpha: 1,
                 scale: 1,
                 filter: "blur(0px)",
-                duration: 0.65,
+                duration: 0.45,
                 ease: "expo.out",
               },
-              5.8,
+              7.2,
             )
             .to(
               vortexRef.current,
-              { autoAlpha: 0, scale: 1.15, duration: 0.55, ease: "power2.inOut" },
-              6.25,
+              { autoAlpha: 0, scale: 1.15, duration: 0.4, ease: "power2.inOut" },
+              7.65,
             )
             // Phase 5: humanization -- the founding headline lands, then
             // Rodolfo's portrait drifts in from the right to balance it.
+            // Holds briefly (~0.35 units) before the logo peels off.
             .fromTo(
               finalContentRef.current,
               { autoAlpha: 0, y: 24 },
-              { autoAlpha: 1, y: 0, duration: 0.55, ease: "power3.out" },
-              6.55,
+              { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out" },
+              8.0,
             )
             .fromTo(
               rodolfoFinalRef.current,
               { autoAlpha: 0, y: 36 },
-              { autoAlpha: 1, y: 0, duration: 0.7, ease: "power2.out" },
-              6.75,
+              { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out" },
+              8.15,
             )
-            // Phase 5 hold (~0.9 units) -- the full "money shot" (headline,
-            // CTA and Rodolfo's portrait together) gets to sit and be read
-            // before the logo peels off toward the header.
-            // Phase 6: the assembled logo shrinks and glides diagonally into
-            // the header slot, crossfading into the fixed header mark right
-            // as it arrives so it reads as one continuous piece docking home.
+            // Pausa 3 (docking) -- the assembled logo shrinks and glides
+            // diagonally into the header slot, crossfading into the fixed
+            // header mark right as it arrives. Once docked (9.6), header
+            // and logo hold locked at the top for a generous ~1.4-unit
+            // margin (~112vh) before the pin releases into the Marquee --
+            // see the `onLeave` comment above for why this needs to be
+            // wide, not just a token pause.
             .to(
               logoCleanRef.current,
               {
                 x: dockDelta.x,
                 y: dockDelta.y,
                 scale: dockDelta.scale,
-                duration: 0.85,
+                duration: 0.45,
                 ease: "power3.out",
               },
-              8.35,
-            )
-            .to(
-              logoCleanRef.current,
-              { autoAlpha: 0, duration: 0.3, ease: "power2.inOut" },
               9.0,
             )
             .fromTo(
               headerLogoRef.current,
               { autoAlpha: 0, scale: 0.85 },
-              { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power3.out" },
-              8.95,
+              { autoAlpha: 1, scale: 1, duration: 0.2, ease: "power3.out" },
+              9.4,
+            )
+            .to(
+              logoCleanRef.current,
+              { autoAlpha: 0, duration: 0.15, ease: "power2.inOut" },
+              9.45,
             );
       }, section);
 
@@ -482,11 +440,6 @@ export function Hero() {
       window.removeEventListener("load", onLoad);
       ctxRef.current?.revert();
       ctxRef.current = null;
-      // Safety net: if the component unmounts mid-auto-play (e.g. fast
-      // navigation away), don't leave the page permanently unscrollable.
-      if (autoPlayDoneRef.current) {
-        document.documentElement.style.overflow = "";
-      }
     };
   }, []);
 
@@ -510,32 +463,50 @@ export function Hero() {
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
 
-      {/* Phase 1: eletricista (visible by default) */}
+      {/* All 4 Rodolfo photos across the Hero story (eletricista,
+          programador, OpenAI, founder) share this exact same container:
+          a generous viewport-based height, capped so it never gets
+          absurd on tall screens, `object-contain` so each full photo (all
+          4 have genuine per-pixel alpha -- confirmed via their alpha
+          channel, corners read alpha 0) is shown at its own natural
+          proportions rather than being cropped, and right-anchored /
+          vertically centered so the story reads as one continuous photo
+          docked to the same spot as it cross-fades between phases. */}
+
+      {/* Phase 1: eletricista (visible by default). */}
       <div
         ref={eletricistaRef}
-        className="absolute inset-0 flex items-end justify-center lg:justify-end lg:pr-16"
+        className="absolute inset-0 flex items-center justify-center lg:justify-end lg:pr-16"
       >
-        <div
-          style={eletricistaFadeMask}
-          className="relative h-[78%] w-full max-w-md lg:h-[92%]"
-        >
+        <div className="relative h-[65vh] max-h-[650px] w-full max-w-md">
+          {/* Ambient integration glow: ties the figure into the green wire
+              backdrop instead of it reading as a flat cutout on top of it. */}
+          <div
+            className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-accent-glow)_0%,transparent_70%)] opacity-70 blur-3xl"
+            aria-hidden="true"
+          />
           <Image
             src="/assets/hero/rodolfo-eletricista-cutout.png"
             alt="Rodolfo Mori atuando como eletricista, antes de se tornar desenvolvedor"
             fill
             priority
             sizes="(min-width: 1024px) 448px, 90vw"
-            className="object-cover object-[78%_bottom]"
+            className="object-contain object-bottom"
           />
         </div>
       </div>
 
-      {/* Phase 2: programador */}
+      {/* Phase 2: programador -- same container and glow rules as phase 1,
+          so neither photo reads as a rectangle pasted on top. */}
       <div
         ref={programadorRef}
-        className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
+        className="invisible absolute inset-0 flex items-center justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
+        <div className="relative h-[65vh] max-h-[650px] w-full max-w-md">
+          <div
+            className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-accent-glow)_0%,transparent_70%)] opacity-70 blur-3xl"
+            aria-hidden="true"
+          />
           <Image
             src="/assets/hero/rodolfo-programador-cutout.png"
             alt="Rodolfo Mori já atuando como desenvolvedor"
@@ -546,17 +517,12 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Phase 3: OpenAI turning-point photo. Unlike the other Rodolfo
-          photos in this file, rodolfo-gerente-openai.png is already a real
-          cutout with genuine alpha transparency (confirmed by inspecting
-          its alpha channel), so it needs none of the levels-crush/blur-mask
-          treatment those required -- object-contain against the section's
-          own dark background is enough. */}
+      {/* Phase 3: OpenAI turning-point photo -- same container rules. */}
       <div
         ref={openaiPhotoRef}
-        className="invisible absolute inset-0 flex items-end justify-center opacity-0 lg:justify-end lg:pr-16"
+        className="invisible absolute inset-0 flex items-center justify-center opacity-0 lg:justify-end lg:pr-16"
       >
-        <div className="relative h-[78%] w-full max-w-md lg:h-[92%]">
+        <div className="relative h-[65vh] max-h-[650px] w-full max-w-md">
           <Image
             src="/assets/hero/rodolfo-gerente-openai.png"
             alt="Rodolfo Mori, Embaixador Oficial da OpenAI"
@@ -642,8 +608,22 @@ export function Hero() {
             const row = Math.floor(i / FRAGMENT_GRID.cols);
             const col = i % FRAGMENT_GRID.cols;
             return (
+              // The ref (and every GSAP transform below) targets THIS slot,
+              // not the tile inside it. Its `overflow-hidden` is what makes
+              // only this quadrant of the logo texture visible -- if the
+              // clip and the moving element were different nodes (as they
+              // used to be), translating the inner tile while the outer
+              // clip stayed put at its small, centered resting position
+              // meant the fragment was invisible for its entire flight and
+              // only ever appeared once it was already back near the
+              // center. Moving the whole slot (clip included) is what lets
+              // it travel across the screen from the real corner and stay
+              // visible the entire way.
               <div
                 key={i}
+                ref={(el) => {
+                  fragmentRefs.current[i] = el;
+                }}
                 className="absolute overflow-hidden"
                 style={{
                   width: `${100 / FRAGMENT_GRID.cols}%`,
@@ -653,9 +633,6 @@ export function Hero() {
                 }}
               >
                 <div
-                  ref={(el) => {
-                    fragmentRefs.current[i] = el;
-                  }}
                   className="absolute"
                   style={{
                     width: `${FRAGMENT_GRID.cols * 100}%`,
@@ -749,6 +726,18 @@ export function Hero() {
           </nav>,
           document.body,
         )}
+
+      {/* Mobile-only dark scrim: below `lg` the text has no `w-3/5` split
+          to keep it clear of the photo (both share the same centered
+          slot), so without this the headline sits directly on top of
+          Rodolfo's face/helmet with no contrast. A flat dark overlay
+          behind the text -- not a repositioning of the photo itself --
+          keeps every one of the 4 GSAP crossfade phases readable without
+          touching their shared positioning. */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-black/55 lg:hidden"
+        aria-hidden="true"
+      />
 
       {/* Each phase's copy fills the exact same slot (absolute inset-0) so
           they can never visually collide -- only opacity differentiates them. */}
@@ -857,7 +846,7 @@ export function Hero() {
         ref={rodolfoFinalRef}
         className="invisible absolute inset-y-0 right-0 z-10 hidden w-2/5 items-center justify-center opacity-0 pr-10 lg:flex xl:pr-16"
       >
-        <div className="relative h-[70%] w-full max-w-sm [animation:hero-float_6s_ease-in-out_infinite]">
+        <div className="relative h-[65vh] max-h-[650px] w-full max-w-md [animation:hero-float_6s_ease-in-out_infinite]">
           <div
             className="absolute inset-0 rounded-full bg-[radial-gradient(ellipse_at_center,var(--color-accent-glow)_0%,transparent_70%)] blur-3xl"
             aria-hidden="true"

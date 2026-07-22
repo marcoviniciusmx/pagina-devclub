@@ -3,11 +3,16 @@ import { cn } from "@/lib/utils";
 
 type NeonButtonProps = ComponentPropsWithoutRef<"a"> & {
   variant?: "solid" | "ghost";
+  // Spinning conic-gradient ring around the border on hover. Some CTAs
+  // want a plain, clean hover (scale + glow only) with no secondary
+  // motion -- set false to skip rendering it entirely.
+  beam?: boolean;
 };
 
 export function NeonButton({
   className,
   variant = "solid",
+  beam = true,
   children,
   ...props
 }: NeonButtonProps) {
@@ -23,10 +28,12 @@ export function NeonButton({
       )}
       {...props}
     >
-      <span
-        aria-hidden="true"
-        className="border-beam pointer-events-none opacity-0 transition-opacity duration-300 [animation-play-state:paused] group-hover:opacity-100 group-hover:[animation-play-state:running]"
-      />
+      {beam && (
+        <span
+          aria-hidden="true"
+          className="border-beam pointer-events-none opacity-0 transition-opacity duration-300 [animation-play-state:paused] group-hover:opacity-100 group-hover:[animation-play-state:running]"
+        />
+      )}
       <span className="relative">{children}</span>
     </a>
   );

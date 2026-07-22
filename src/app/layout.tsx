@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "DevClub — De Zero a Desenvolvedor Contratado",
+  title: "DevClub - De Zero a Desenvolvedor Contratado",
   description:
     "A maior escola de programação e IA do Brasil. Formação com mentoria 360°, chancela do MEC e comunidade de alunos contratados por iFood, Itaú, Nubank e VTEX.",
 };

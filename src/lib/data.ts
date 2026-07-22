@@ -97,38 +97,53 @@ export type GradeArea = {
   title: string;
   description: string;
   icon: string | null;
+  // Tech pills shown on the expanded card -- these are the DevClub
+  // formação's own official curriculum tags, not derived/invented ones.
+  techs: string[];
 };
 
 export const gradeAreas: GradeArea[] = [
   {
-    title: "Front-End",
+    title: "FullStack Pro",
     description:
-      "Construção de interfaces modernas com HTML, CSS, JavaScript, TypeScript e React — do fundamento à componentização.",
+      "A formação mais completa para te levar do zero ao mercado de trabalho pronto para vagas de alto nível.",
     icon: "/assets/tech-stack/react.svg",
+    techs: [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "React.js",
+      "Node.js",
+      "React Native",
+      "TypeScript",
+    ],
   },
   {
-    title: "Back-End",
+    title: "FrontEnd Club",
     description:
-      "APIs, autenticação e lógica de servidor com Node.js e TypeScript, prontas para escalar em produção.",
-    icon: "/assets/tech-stack/node.svg",
+      "Domine a criação de interfaces modernas, interativas e de alta performance no ecossistema web.",
+    icon: "/assets/tech-stack/react.svg",
+    techs: ["HTML", "CSS", "JavaScript", "React.js"],
   },
   {
-    title: "Banco de Dados",
+    title: "IA Club",
     description:
-      "Modelagem, consultas e integração de bancos relacionais e não relacionais no fluxo real de uma aplicação.",
+      "Domine as ferramentas e conceitos de Inteligência Artificial para criar sistemas autônomos e autoria de ponta.",
     icon: null,
+    techs: [
+      "Engenharia de Prompt",
+      "Machine Learning",
+      "Deep Learning",
+      "n8n",
+      "Prospecção de Clientes",
+    ],
   },
   {
-    title: "Mobile",
+    title: "Mil reais em 7 dias",
     description:
-      "Aplicação dos mesmos fundamentos de React para construir experiências mobile multiplataforma.",
+      "Aprenda a criar sites profissionais e a captar clientes na prática para faturar seus primeiros mil reais em 7 dias.",
     icon: null,
-  },
-  {
-    title: "Inteligência Artificial",
-    description:
-      "Uso prático de IA generativa no dia a dia de desenvolvimento — do prompt à automação de tarefas de código.",
-    icon: null,
+    techs: ["Criação de Sites", "Prospecção de Clientes", "Vendas", "Freelance"],
   },
 ];
 
