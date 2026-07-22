@@ -35,7 +35,14 @@
 @layer base {
   html {
     color-scheme: dark;
-    scroll-behavior: smooth;
+    /* No `scroll-behavior: smooth` here on purpose: nothing in this app
+       uses anchor-link jumps, and GSAP ScrollTrigger's pin/scrub/snap on
+       the Hero fights the browser's own native smooth-scroll -- every
+       scrollTo() ScrollTrigger issues internally (snapping to a scene) gets
+       re-smoothed on top of GSAP's own eased tween, so the snap target is
+       read against a constantly-lagging position and never settles.
+       ScrollTrigger's `scrub` already provides all the smoothing this page
+       needs. */
   }
 
   body {
@@ -115,18 +122,60 @@
   }
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
 @keyframes border-beam-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes vortex-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vortex-spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes cert-scanline {
+  0% {
+    top: -8%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 108%;
+    opacity: 0;
+  }
+}
+
+@keyframes mec-seal-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.35))
+      drop-shadow(0 0 18px rgba(57, 213, 114, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.65))
+      drop-shadow(0 0 34px rgba(57, 213, 114, 0.45));
   }
 }
 

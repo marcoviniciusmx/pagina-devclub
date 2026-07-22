@@ -1,29 +1,62 @@
 export const DEVCLUB_URL = "https://www.devclub.com.br/";
+export const STUDENT_AREA_URL = "https://aulas.devclub.com.br/";
 
 export type StackItem = {
   name: string;
   icon: string;
 };
 
+// Mock/placeholder data for the expanded stack marquee. JavaScript,
+// TypeScript, React and Node.js keep their real hand-authored brand marks;
+// the rest use simplified monogram badges (not official trademarked logos)
+// generated for this redesign -- swap in official SVGs per tool if exact
+// branding is needed later.
 export const stackItems: StackItem[] = [
-  { name: "HTML5", icon: "/assets/tech-stack/html-5.svg" },
-  { name: "CSS3", icon: "/assets/tech-stack/css-3.svg" },
   { name: "JavaScript", icon: "/assets/tech-stack/javascript.svg" },
   { name: "TypeScript", icon: "/assets/tech-stack/typescript.svg" },
   { name: "React", icon: "/assets/tech-stack/react.svg" },
+  { name: "Next.js", icon: "/assets/tech-stack/nextjs.svg" },
   { name: "Node.js", icon: "/assets/tech-stack/node.svg" },
+  { name: "Python", icon: "/assets/tech-stack/python.svg" },
+  { name: "OpenAI API", icon: "/assets/tech-stack/openai.svg" },
+  { name: "LangChain", icon: "/assets/tech-stack/langchain.svg" },
+  { name: "TailwindCSS", icon: "/assets/tech-stack/tailwindcss.svg" },
+  { name: "Docker", icon: "/assets/tech-stack/docker.svg" },
+  { name: "PostgreSQL", icon: "/assets/tech-stack/postgresql.svg" },
+  { name: "GraphQL", icon: "/assets/tech-stack/graphql.svg" },
+  { name: "NestJS", icon: "/assets/tech-stack/nestjs.svg" },
+  { name: "Redis", icon: "/assets/tech-stack/redis.svg" },
+  { name: "Vue.js", icon: "/assets/tech-stack/vuejs.svg" },
+  { name: "AWS", icon: "/assets/tech-stack/aws.svg" },
+  { name: "Kubernetes", icon: "/assets/tech-stack/kubernetes.svg" },
+  { name: "Fastify", icon: "/assets/tech-stack/fastify.svg" },
 ];
 
 export type CompanyItem = {
   name: string;
-  icon: string;
+  icon?: string;
 };
 
+// Real companies/institutions. Icons are official vector logos sourced from
+// each brand's own press kit or Wikimedia Commons -- NOT hand-drawn
+// approximations (reproducing a trademark from memory risks an inaccurate,
+// unauthorized copy, so every icon here traces back to a real source file).
+// OAB has no `icon` because no legitimate SVG could be sourced anywhere
+// (its official brand kit only publishes a PDF manual) -- it falls back to
+// a plain text wordmark instead of a fabricated logo.
+// IMPORTANT: the eyebrow copy above this row states these are real
+// companies where DevClub alumni are employed -- verify that claim is
+// accurate (documented hires) for every entry below before shipping.
 export const companyItems: CompanyItem[] = [
   { name: "iFood", icon: "/assets/empresas/ifood.svg" },
   { name: "Itaú", icon: "/assets/empresas/itau.svg" },
   { name: "Nubank", icon: "/assets/empresas/nubank.svg" },
   { name: "VTEX", icon: "/assets/empresas/vtex.svg" },
+  { name: "OAB" },
+  { name: "USP", icon: "/assets/empresas/usp.svg" },
+  { name: "Santander", icon: "/assets/empresas/santander.svg" },
+  { name: "Mercado Livre", icon: "/assets/empresas/mercadolivre.svg" },
+  { name: "Ambev", icon: "/assets/empresas/ambev.svg" },
 ];
 
 export type Mentor = {
