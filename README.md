@@ -1,4 +1,4 @@
-<h1 align="center">DevClub — Landing Page</h1>
+<h1 align="center">DevClub - Landing Page</h1>
 
 <p align="center">
   Landing page institucional da DevClub, a maior escola de programação e IA do Brasil. Conta a jornada do fundador (de eletricista a desenvolvedo contratado) através de uma experiência de scroll cinematográfica, e apresenta a formação, a mentoria 360° e a prova social da escola até a conversão final.
@@ -16,7 +16,7 @@
 <br>
 
 <p align="center">
-  <img alt="DevClub — Hero da landing page" src="docs/preview.png" width="100%">
+  <img alt="DevClub - Hero da landing page" src="docs/preview.png" width="100%">
 </p>
 
 ---
@@ -152,20 +152,20 @@ npm run start
 ## 🏗️ Decisões técnicas
 
 - **Pin de seção com scrub suavizado, não animação por tempo fixo**:
-  o Hero usa `ScrollTrigger` com `pin: true` e `scrub: 2` — a
+  o Hero usa `ScrollTrigger` com `pin: true` e `scrub: 2` - a
   timeline é uma função direta da posição de scroll (nunca avança
   sozinha), só que com ~2s de suavização/inércia entre a posição real
   do scroll e o que é renderizado, para dar peso cinematográfico sem
   abrir mão do controle manual do usuário em ambas as direções.
 - **Logo do header portalizada para `<body>`**: a marca fixa do
-  header precisa ficar em `position: fixed` de verdade — dentro da
+  header precisa ficar em `position: fixed` de verdade - dentro da
   seção pinada, um `transform` aplicado pelo próprio `ScrollTrigger`
   transformaria esse `fixed` em relativo ao ancestral, quebrando o
   posicionamento. Portalizar para `document.body` resolve isso sem
   gambiarra de z-index.
 - **Medição de posição do "docking" espera o mount do portal**: o
   cálculo de para onde a logo deve "andar" depende de medir a marca
-  do header via `getBoundingClientRect()` — que só existe depois que
+  do header via `getBoundingClientRect()` - que só existe depois que
   o portal monta. Esse gate usa `useSyncExternalStore` (não
   `useState` + `useEffect` disparando `setState`) para detectar o
   mount no client sem cair no anti-padrão de setState síncrono dentro
@@ -177,7 +177,7 @@ npm run start
   estava na imagem de origem.
 - **`prefers-reduced-motion` como estado de primeira classe**: quando
   ativo, o Hero pula direto para o headline final e o CTA, sem montar
-  nenhuma etapa da história — não é só desligar easing, é um caminho
+  nenhuma etapa da história - não é só desligar easing, é um caminho
   de renderização alternativo.
 - **Conteúdo centralizado em `lib/data.ts`**: stack de tecnologias,
   empresas parceiras, grade curricular, mentores e FAQ vivem como
