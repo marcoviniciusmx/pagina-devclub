@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { ChevronsRightIcon, UserIcon } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { NeonButton } from "@/components/ui/NeonButton";
@@ -29,6 +34,25 @@ const FRAGMENT_GRID = { cols: 2, rows: 2 };
 // out past the real screen edge, not just past its own small parent's
 // edge -- so it has to visibly travel in from the corner instead of
 // fading in already close to the center.
+// Client-mount detection for the header-logo portal below, via
+// `useSyncExternalStore` rather than a `useState` + `useEffect(() =>
+// setState(true), [])` pair -- that pattern calling setState synchronously
+// inside an effect body is exactly what `react-hooks/set-state-in-effect`
+// flags (a plain "did we mount" flip has no external system to actually
+// synchronize with). There's nothing to subscribe to -- the value only ever
+// flips once, from the server snapshot (false, since `document` doesn't
+// exist server-side) to the client snapshot (true) -- so the subscribe
+// callback is a no-op.
+function subscribeToNothing() {
+  return () => {};
+}
+function getClientMountedSnapshot() {
+  return true;
+}
+function getServerMountedSnapshot() {
+  return false;
+}
+
 function getFragmentOrigin(i: number, vw: number, vh: number) {
   const row = Math.floor(i / FRAGMENT_GRID.cols);
   const col = i % FRAGMENT_GRID.cols;
@@ -57,25 +81,86 @@ export function Hero() {
   const logoDesconstruidaRef = useRef<HTMLDivElement>(null);
   const fragmentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const logoCleanRef = useRef<HTMLDivElement>(null);
+  const logoCleanBoxRef = useRef<HTMLDivElement>(null);
   const headerLogoRef = useRef<HTMLDivElement>(null);
   const finalContentRef = useRef<HTMLDivElement>(null);
   const rodolfoFinalRef = useRef<HTMLDivElement>(null);
   const scrollHintRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<gsap.Context | null>(null);
   // The header mark is portaled to <body> (see JSX below) so it never ends
   // up nested inside the pinned section -- ScrollTrigger pins by applying a
   // CSS transform to the pinned element, and a `transform` on an ancestor
   // turns `position: fixed` descendants into containing-block-relative
   // ones, sending a naively-nested fixed logo flying off with the pin.
-  const [portalReady, setPortalReady] = useState(false);
+  const portalReady = useSyncExternalStore(
+    subscribeToNothing,
+    getClientMountedSnapshot,
+    getServerMountedSnapshot,
+  );
 
+  // Spotlight: a soft neon blob that trails the cursor across the Hero.
+  // Kept as its own effect (separate from the scroll-story context below)
+  // since it's a continuous pointer-driven loop, not tied to scroll
+  // position at all -- mixing it into the ScrollTrigger timeline would be
+  // the wrong tool for a "follow the mouse" animation.
   useEffect(() => {
-    setPortalReady(true);
+    const section = sectionRef.current;
+    const spotlight = spotlightRef.current;
+    if (!section || !spotlight) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    // `x`/`y` below are plain px offsets from the element's own top-left
+    // corner -- centering the glow ON the cursor (instead of tucking the
+    // cursor into its corner) needs this GSAP-native percent-of-self
+    // offset set once, so it composes with every later x/y tween rather
+    // than fighting a CSS transform class GSAP didn't set itself.
+    gsap.set(spotlight, { xPercent: -50, yPercent: -50 });
+
+    const onMouseMove = (event: MouseEvent) => {
+      const rect = section.getBoundingClientRect();
+      gsap.to(spotlight, {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+        // 0.18 is the resting *visible* opacity (spec calls for 0.15-0.2)
+        // -- deliberately not 1, this glow stays a subtle ambient wash,
+        // never a bright UI element competing with the text above it.
+        opacity: 0.18,
+        duration: 0.7,
+        ease: "power2.out",
+      });
+    };
+
+    const onMouseLeave = () => {
+      gsap.to(spotlight, { opacity: 0, duration: 0.4, ease: "power2.out" });
+    };
+
+    section.addEventListener("mousemove", onMouseMove);
+    section.addEventListener("mouseleave", onMouseLeave);
+
+    return () => {
+      section.removeEventListener("mousemove", onMouseMove);
+      section.removeEventListener("mouseleave", onMouseLeave);
+    };
   }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section) return;
+    // The header mark only exists in the DOM once its portal has mounted
+    // (gated by `portalReady`, flipped in a separate effect above). This
+    // effect runs on the very first mount too -- same passive-effect pass,
+    // before that state flip has committed -- so without this guard,
+    // `headerLogoRef.current` would still be null when `dockDelta` gets
+    // measured below, silently falling back to `{ x: 0, y: 0, scale: 0.3 }`
+    // and permanently baking that into the closure: the docking tween would
+    // shrink the logo in place with zero translation (no diagonal walk at
+    // all) instead of really flying it to the header. Waiting for
+    // `portalReady` guarantees the header node is real and measurable the
+    // one time this effect actually builds the timeline.
+    if (!section || !portalReady) return;
 
     let cancelled = false;
     // Turbopack injects Tailwind's stylesheet after first paint in dev, so
@@ -118,7 +203,20 @@ export function Hero() {
         // the fixed header mark's box regardless of breakpoint -- both refs
         // are already laid out at this point (autoAlpha only toggles
         // opacity/visibility, never display), so their rects are real.
-        const cleanRect = logoCleanRef.current?.getBoundingClientRect();
+        //
+        // Deliberately measuring `logoCleanBoxRef` (the actual h-32/h-40
+        // logo box), NOT `logoCleanRef` (its parent, which is the
+        // full-viewport `absolute inset-0` flex wrapper). Using the
+        // wrapper's rect here previously divided the header mark's ~64px
+        // width by the *entire screen width* to compute scale -- shrinking
+        // the assembled logo to a barely-visible speck almost instantly
+        // instead of a readable ~0.25 scale, which read as the logo simply
+        // vanishing before the header mark faded in. The wrapper is still
+        // what gets translated/scaled below (its transform-origin sits at
+        // its own center, which coincides exactly with the box's center
+        // since the box is flex-centered inside it), only the *ratio* was
+        // wrong.
+        const cleanRect = logoCleanBoxRef.current?.getBoundingClientRect();
         const headerRect = headerLogoRef.current?.getBoundingClientRect();
         const dockDelta =
           cleanRect && headerRect
@@ -139,10 +237,10 @@ export function Hero() {
         // constant so the background parallax -- the only tween that spans
         // the entire ride -- can be told to last exactly as long as the
         // story does, instead of freezing early if the story grows).
-        // The last real beat (header docking) lands at 9.6; everything
-        // from there to 11 is deliberate silent tail, not a beat -- see
+        // The last real beat (header docking) lands at 10.05; everything
+        // from there to 11.5 is deliberate silent tail, not a beat -- see
         // the `end` comment below for why it needs to be this long.
-        const HERO_TIMELINE_DURATION = 11;
+        const HERO_TIMELINE_DURATION = 11.5;
 
         // Baseline visible/hidden state already lives in the JSX className
         // (invisible/opacity-0 -- the exact pair GSAP's own `autoAlpha`
@@ -153,7 +251,7 @@ export function Hero() {
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            // "+=880vh" of scroll for the entire pinned story -- expressed
+            // "+=920vh" of scroll for the entire pinned story -- expressed
             // in pixels (not the literal percentage string) for the same
             // reason noted before: measuring a bare percentage before
             // layout has fully settled is what previously caused the pin
@@ -165,9 +263,10 @@ export function Hero() {
             // longer track means the user must scroll noticeably more to
             // advance each phase, without touching any of the relative
             // pacing between beats below. The 80vh-per-unit ratio here
-            // (880/11) matches the previous 800/10 exactly -- only the
-            // trailing silent tail grew, nothing else re-paced.
-            end: () => "+=" + window.innerHeight * 8.8,
+            // (920/11.5) matches the original 800/10 exactly -- only the
+            // docking travel and the trailing silent tail grew, nothing
+            // else re-paced.
+            end: () => "+=" + window.innerHeight * 9.2,
             // Filmic weight: at `scrub: 2`, the timeline's playhead takes
             // a full ~2s to ease into wherever the scrollbar currently is.
             // A fast fling no longer produces an instant jump-cut -- it
@@ -188,9 +287,9 @@ export function Hero() {
             invalidateOnRefresh: true,
             // Safety net for the header hand-off: `scrub: 2` means the
             // timeline's playhead can still be lagging up to ~2s behind a
-            // fast fling. The 1.4-unit (~112vh) silent tail after docking
-            // (9.6 -> 11) absorbs that lag in the overwhelming majority of
-            // cases, but a hard-enough fling (or a synthetic instant
+            // fast fling. The 1.45-unit (~116vh) silent tail after docking
+            // (10.05 -> 11.5) absorbs that lag in the overwhelming majority
+            // of cases, but a hard-enough fling (or a synthetic instant
             // scrollTo) can still outrun it and cross `end` -- unpinning
             // the section -- before the eased tween visually finishes.
             // Without this, that leaves the assembled logo stuck mid-air
@@ -203,6 +302,28 @@ export function Hero() {
             onLeave: () => {
               gsap.set(logoCleanRef.current, { autoAlpha: 0 });
               gsap.set(headerLogoRef.current, { autoAlpha: 1, scale: 1 });
+            },
+            // Symmetric safety net for the reverse direction: `onLeave`'s
+            // `gsap.set()` above writes a plain inline style straight onto
+            // the header logo, completely outside the timeline. Nothing
+            // before t=9.6 ever tells GSAP to hide that element again, so
+            // scrubbing back up doesn't clear it on its own -- it only gets
+            // re-synced once the playhead happens to re-enter exactly the
+            // 9.6-9.95 window. If the pin releases (onLeave fires) and the
+            // user then scrolls back up, `onEnterBack` fires the instant
+            // scroll re-enters the pinned range, forcing both elements back
+            // to their correct pre-dock state (header hidden, clean logo
+            // sitting docked-but-not-yet-crossfaded) so the rest of the
+            // reverse scrub proceeds from a consistent starting point
+            // instead of a stuck, fully-docked header mark.
+            onEnterBack: () => {
+              gsap.set(headerLogoRef.current, { autoAlpha: 0 });
+              gsap.set(logoCleanRef.current, {
+                autoAlpha: 1,
+                x: dockDelta.x,
+                y: dockDelta.y,
+                scale: dockDelta.scale,
+              });
             },
           },
         });
@@ -399,32 +520,40 @@ export function Hero() {
             )
             // Pausa 3 (docking) -- the assembled logo shrinks and glides
             // diagonally into the header slot, crossfading into the fixed
-            // header mark right as it arrives. Once docked (9.6), header
-            // and logo hold locked at the top for a generous ~1.4-unit
-            // margin (~112vh) before the pin releases into the Marquee --
-            // see the `onLeave` comment above for why this needs to be
-            // wide, not just a token pause.
+            // header mark right as it arrives. This travel is deliberately
+            // wide (1.0 unit, ~80vh of scroll) rather than a quick blip:
+            // at `scrub: 2` a short tween resolves within a fraction of the
+            // playhead's own ~2s catch-up lag, so on a real scroll it was
+            // rendering as an instant teleport (logo forms at center,
+            // vanishes, static header mark fades in) instead of a visible
+            // diagonal walk. Stretching the window gives the eased playhead
+            // enough distance to actually animate through, not just snap to
+            // the end of it. Once docked (10.05), header and logo hold
+            // locked at the top for a generous ~1.45-unit margin (~116vh)
+            // before the pin releases into the Marquee -- see the `onLeave`
+            // comment above for why this needs to be wide, not just a token
+            // pause.
             .to(
               logoCleanRef.current,
               {
                 x: dockDelta.x,
                 y: dockDelta.y,
                 scale: dockDelta.scale,
-                duration: 0.45,
-                ease: "power3.out",
+                duration: 1.0,
+                ease: "power2.inOut",
               },
               9.0,
             )
             .fromTo(
               headerLogoRef.current,
               { autoAlpha: 0, scale: 0.85 },
-              { autoAlpha: 1, scale: 1, duration: 0.2, ease: "power3.out" },
-              9.4,
+              { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power3.out" },
+              9.6,
             )
             .to(
               logoCleanRef.current,
-              { autoAlpha: 0, duration: 0.15, ease: "power2.inOut" },
-              9.45,
+              { autoAlpha: 0, duration: 0.35, ease: "power2.inOut" },
+              9.7,
             );
       }, section);
 
@@ -441,7 +570,7 @@ export function Hero() {
       ctxRef.current?.revert();
       ctxRef.current = null;
     };
-  }, []);
+  }, [portalReady]);
 
   return (
     <section
@@ -462,6 +591,21 @@ export function Hero() {
         />
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/80" />
+
+      {/* Mouse-follow spotlight: sits above the background art but below
+          every photo phase and all text (which has its own z-10), so it
+          reads as ambient light in the scene rather than a UI overlay.
+          `opacity-0` at rest -- the mousemove effect above eases it to 1
+          the first time the cursor enters, and back to 0 on mouseleave. */}
+      <div
+        ref={spotlightRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute top-0 left-0 z-0 h-[500px] w-[500px] rounded-full opacity-0 blur-[100px]"
+        style={{
+          background:
+            "radial-gradient(circle, #00FF88 0%, #10B981 40%, transparent 70%)",
+        }}
+      />
 
       {/* All 4 Rodolfo photos across the Hero story (eletricista,
           programador, OpenAI, founder) share this exact same container:
@@ -656,7 +800,10 @@ export function Hero() {
         ref={logoCleanRef}
         className="invisible absolute inset-0 flex items-center justify-center opacity-0"
       >
-        <div className="relative h-32 w-64 sm:h-40 sm:w-80">
+        <div
+          ref={logoCleanBoxRef}
+          className="relative h-32 w-64 sm:h-40 sm:w-80"
+        >
           <Image
             src="/assets/hero/logo-devclub.svg"
             alt="DevClub"
@@ -808,7 +955,7 @@ export function Hero() {
             <span className="h-2 w-2 shrink-0 rounded-full bg-accent glow-accent" />
             <span className="font-heading text-sm font-medium text-foreground sm:text-base">
               Rodolfo Mori é Embaixador Oficial da{" "}
-              <span className="text-accent">OpenAI</span>
+              <span className="text-accent">OpenAI no Brasil</span>
             </span>
           </div>
         </div>
@@ -828,6 +975,7 @@ export function Hero() {
             href={DEVCLUB_URL}
             target="_blank"
             rel="noopener noreferrer"
+            beam={false}
           >
             Quero me tornar um Desenvolvedor
           </NeonButton>

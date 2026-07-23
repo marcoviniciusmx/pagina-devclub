@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { faqItems } from "@/lib/data";
 import { Reveal } from "@/components/ui/Reveal";
+
+// Shared spring so the panel height, the answer's opacity, and the icon's
+// rotation all settle in lockstep instead of racing each other at slightly
+// different curves/durations.
+const FAQ_SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
 
 export function Faq() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -39,18 +43,19 @@ export function Faq() {
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className="flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-5 text-left"
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 px-6 py-4 text-left"
                 >
                   <span className="font-heading text-base font-medium text-foreground sm:text-lg">
                     {item.question}
                   </span>
-                  <Plus
-                    aria-hidden="true"
-                    className={cn(
-                      "h-5 w-5 shrink-0 text-accent transition-transform duration-300",
-                      isOpen && "rotate-45",
-                    )}
-                  />
+                  <motion.span
+                    initial={false}
+                    animate={{ rotate: isOpen ? 45 : 0 }}
+                    transition={FAQ_SPRING}
+                    className="shrink-0"
+                  >
+                    <Plus aria-hidden="true" className="h-5 w-5 text-accent" />
+                  </motion.span>
                 </button>
               </h3>
               <AnimatePresence initial={false}>
@@ -59,15 +64,26 @@ export function Faq() {
                     id={panelId}
                     role="region"
                     aria-labelledby={buttonId}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    initial={{ height: 0 }}
+                    animate={{ height: "auto" }}
+                    exit={{ height: 0 }}
+                    transition={FAQ_SPRING}
                     className="overflow-hidden"
                   >
-                    <p className="px-6 pb-5 text-sm leading-relaxed text-muted-foreground">
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{
+                        opacity: 1,
+                        transition: { duration: 0.25, delay: 0.1, ease: "easeOut" },
+                      }}
+                      exit={{
+                        opacity: 0,
+                        transition: { duration: 0.15, ease: "easeOut" },
+                      }}
+                      className="px-6 pt-2 pb-5 text-sm leading-relaxed text-muted-foreground"
+                    >
                       {item.answer}
-                    </p>
+                    </motion.p>
                   </motion.div>
                 )}
               </AnimatePresence>
