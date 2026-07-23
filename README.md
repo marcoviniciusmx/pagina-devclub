@@ -96,6 +96,8 @@ final estático quando o usuário pede menos movimento.
   assets órfãos, código morto e triple-check de `tsc`/lint/build) e
   validação visual das telas com Playwright. Todo o código gerado foi
   revisado e testado manualmente antes de aceito.
+- **Gemini**: usado como apoio durante todo o processo para discutir
+  ideias, tirar dúvidas e validar decisões antes de implementá-las.
 
 ---
 
