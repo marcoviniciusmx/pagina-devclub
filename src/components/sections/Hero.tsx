@@ -302,6 +302,16 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background via-background/55 to-transparent" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
 
+      {/* Dedicated bottom seam: the fade above tapers gently across the
+          whole viewport, which isn't reliably opaque enough by the very
+          last row against a bright video frame -- and it sits under the
+          z-10 Act copy/Rodolfo portrait, not over them, so neither is
+          covered by it. This one is short, reaches full `--color-background`
+          well before the edge, and outranks that whole layer (z-20), so
+          nothing pinned in Hero can ever end on an uncovered pixel where it
+          meets the next section. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-56 bg-gradient-to-t from-background to-transparent" />
+
       {/* Persistent header: logo + nav actions are never part of the
           scroll story -- they're real navigation and must be visible and
           clickable from the very first frame. Portaled to <body> so they
