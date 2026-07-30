@@ -5,13 +5,26 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "@/lib/gsap";
 import type { CompanyItem } from "@/lib/data";
 
-// cinetica.studio-style swap: the incoming logo slides up from below and,
-// in the exact same motion, shoves the outgoing one out through the top of
-// the clipped cell -- one continuous push (both legs share duration/ease/
-// distance), not two independently-timed fades. The cell's `overflow-hidden`
-// does the "kicked out of the frame" part for free.
-const PUSH_DURATION = 0.55;
-const PUSH_EASE = "power2.inOut";
+// cinetica.studio-style swap, two beats instead of one continuous slide:
+// (1) the incoming logo rises ALONE from further below while the outgoing
+// one stays perfectly still -- reads as "closing the gap" -- then (2) the
+// instant it touches the outgoing's bottom edge, both move together as one
+// rigid unit (the touch is literally what shoves the outgoing one up and
+// out through the clipped cell). It's the stillness during phase 1 that
+// sells the "pushed by contact" read -- a single continuous slide (both
+// legs moving from frame one) never shows the moment of impact.
+const APPROACH_EXTRA = 80; // % of cell height incoming starts below contact
+const APPROACH_DURATION = 0.3;
+const APPROACH_EASE = "power2.inOut";
+const SHOVE_DURATION = 0.4;
+const SHOVE_EASE = "power3.out";
+const PARK_Y = 100 + APPROACH_EXTRA;
+
+// Just a background pulse marking the moment of contact -- not a wash over
+// the whole transition, which reads as the logos going "invisible".
+const GLOW_PEAK = 0.45;
+const GLOW_FLASH_DURATION = 0.16;
+
 const MIN_HOLD = 2.5;
 const MAX_HOLD = 6;
 
@@ -57,22 +70,31 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
     let cancelled = false;
 
     const ctx = gsap.context(() => {
-      // Resting state up front -- `incoming` starts parked one full cell
-      // below (clipped, invisible) so the very first cycle already has
-      // something to push up into place.
+      // Resting state up front -- `incoming` starts parked well below
+      // contact so the very first cycle still gets a visible approach.
       gsap.set(current, { yPercent: 0 });
-      gsap.set(incoming, { yPercent: 100 });
+      gsap.set(incoming, { yPercent: PARK_Y });
 
       const runCycle = () => {
         if (cancelled) return;
         gsap
           .timeline({ onComplete: runCycle })
-          .to(current, { yPercent: -100, duration: PUSH_DURATION, ease: PUSH_EASE })
-          .to(incoming, { yPercent: 0, duration: PUSH_DURATION, ease: PUSH_EASE }, "<")
+          // Phase 1 -- approach: incoming closes the gap alone, current
+          // doesn't move a single pixel yet.
+          .to(incoming, {
+            yPercent: 100,
+            duration: APPROACH_DURATION,
+            ease: APPROACH_EASE,
+          })
+          // Phase 2 -- contact: the shove. Both move together, same
+          // duration/ease, so the gap between them never reopens -- current
+          // only starts moving because incoming just touched it.
+          .to(current, { yPercent: -100, duration: SHOVE_DURATION, ease: SHOVE_EASE })
+          .to(incoming, { yPercent: 0, duration: SHOVE_DURATION, ease: SHOVE_EASE }, "<")
           .fromTo(
             glow,
             { opacity: 0 },
-            { opacity: 1, duration: PUSH_DURATION * 0.5, yoyo: true, repeat: 1 },
+            { opacity: GLOW_PEAK, duration: GLOW_FLASH_DURATION, yoyo: true, repeat: 1 },
             "<",
           )
           .call(() => {
@@ -83,7 +105,7 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
             // "incoming"; incoming preloads the one after that) -- snap
             // both back to their resting transforms for the next cycle.
             gsap.set(current, { yPercent: 0 });
-            gsap.set(incoming, { yPercent: 100 });
+            gsap.set(incoming, { yPercent: PARK_Y });
           })
           .to({}, { duration: gsap.utils.random(MIN_HOLD, MAX_HOLD) });
       };
@@ -106,7 +128,7 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
       <div
         ref={glowRef}
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,var(--color-accent-glow)_0%,transparent_70%)] opacity-0 blur-xl"
+        className="pointer-events-none absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,var(--color-accent-glow)_0%,transparent_70%)] opacity-0 blur-lg"
       />
       <div
         ref={currentRef}
@@ -116,7 +138,8 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
       </div>
       <div
         ref={incomingRef}
-        className="absolute inset-0 flex translate-y-full items-center justify-center"
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ transform: `translateY(${PARK_Y}%)` }}
       >
         <CompanyFace item={items[nextIndex]} />
       </div>
