@@ -3,52 +3,18 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { gsap } from "@/lib/gsap";
-import { companyItems, stackItems } from "@/lib/data";
+import { companyShowcaseItems, stackItems } from "@/lib/data";
+import { CompanyFlipGrid } from "@/components/sections/CompanyFlipGrid";
 
-// Constant px/sec across both rows regardless of how many items or how
-// long their names are, so the stack (18 items) and companies (14 items)
-// rows always feel like the same continuous "ecosystem" speed rather than
-// one visibly outrunning the other.
+// Constant px/sec for the stack row regardless of how many items or how
+// long their names are.
 const MARQUEE_SPEED_PX_PER_SEC = 55;
 const HOVER_TIME_SCALE = 0.25;
 const HOVER_EASE_DURATION = 0.8;
 
 type MarqueeItem = { name: string; icon?: string };
 
-function MarqueeLogo({ item }: { item: MarqueeItem }) {
-  if (!item.icon) {
-    // No legitimate official vector could be sourced for this entry (e.g.
-    // OAB has no public SVG brand kit) -- fall back to a plain wordmark
-    // rather than fabricating a logo, styled to sit inline with real ones.
-    return (
-      <span className="font-heading text-xl font-semibold tracking-tight whitespace-nowrap text-muted-foreground opacity-70 transition-all duration-300 ease-out group-hover:scale-105 group-hover:text-foreground group-hover:opacity-100 group-hover:[text-shadow:0_0_18px_var(--color-accent-glow)]">
-        {item.name}
-      </span>
-    );
-  }
-
-  // Real logos span wildly different aspect ratios (square marks vs wide
-  // wordmarks); a plain img keeps each one's natural proportions at a fixed
-  // height, which next/image's `fill` mode can't do without a hardcoded width.
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={item.icon}
-      alt={item.name}
-      className="h-8 w-auto shrink-0 object-contain opacity-80 brightness-0 invert-[65%] transition-all duration-300 ease-out group-hover:scale-105 group-hover:opacity-100 group-hover:invert group-hover:drop-shadow-[0_0_14px_var(--color-accent-glow)]"
-    />
-  );
-}
-
-function MarqueeRow({
-  items,
-  reverse = false,
-  variant = "chip",
-}: {
-  items: MarqueeItem[];
-  reverse?: boolean;
-  variant?: "chip" | "logo";
-}) {
+function MarqueeRow({ items }: { items: MarqueeItem[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<gsap.Context | null>(null);
@@ -80,17 +46,11 @@ function MarqueeRow({
         const halfWidth = trackEl.scrollWidth / 2;
         const duration = halfWidth / MARQUEE_SPEED_PX_PER_SEC;
 
-        const tween = reverse
-          ? gsap.fromTo(
-              trackEl,
-              { xPercent: -50 },
-              { xPercent: 0, duration, ease: "none", repeat: -1 },
-            )
-          : gsap.fromTo(
-              trackEl,
-              { xPercent: 0 },
-              { xPercent: -50, duration, ease: "none", repeat: -1 },
-            );
+        const tween = gsap.fromTo(
+          trackEl,
+          { xPercent: 0 },
+          { xPercent: -50, duration, ease: "none", repeat: -1 },
+        );
 
         // Inertial brake: a plain proxy object's numeric value is eased
         // (the standard, foolproof GSAP pattern for a derived value) and
@@ -132,7 +92,7 @@ function MarqueeRow({
       ctxRef.current?.revert();
       ctxRef.current = null;
     };
-  }, [items, reverse]);
+  }, [items]);
 
   return (
     <div ref={containerRef} className="mask-fade-x relative overflow-hidden">
@@ -142,9 +102,7 @@ function MarqueeRow({
             key={`${item.name}-${index}`}
             className="group flex shrink-0 items-center gap-3"
           >
-            {variant === "logo" ? (
-              <MarqueeLogo item={item} />
-            ) : item.icon ? (
+            {item.icon ? (
               <>
                 <div className="relative h-9 w-9 shrink-0 opacity-35 grayscale transition-all duration-300 ease-out group-hover:scale-110 group-hover:opacity-100 group-hover:grayscale-0 group-hover:drop-shadow-[0_0_12px_var(--color-accent-glow)]">
                   <Image
@@ -173,7 +131,7 @@ function MarqueeRow({
 export function Marquee() {
   return (
     <section
-      aria-label="Tecnologias ensinadas e empresas que contrataram alunos DevClub"
+      aria-label="Tecnologias ensinadas e empresas do ecossistema DevClub"
       className="relative border-y border-border bg-background py-14"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6">
@@ -184,10 +142,10 @@ export function Marquee() {
           <MarqueeRow items={stackItems} />
         </div>
         <div>
-          <p className="mb-6 text-center font-heading text-[11px] uppercase tracking-[0.15em] text-muted-foreground opacity-50">
-            Empresas que contrataram alunos DevClub
+          <p className="mb-8 text-center font-heading text-[11px] uppercase tracking-[0.15em] text-muted-foreground opacity-50">
+            Empresas e times do ecossistema DevClub
           </p>
-          <MarqueeRow items={companyItems} reverse variant="logo" />
+          <CompanyFlipGrid items={companyShowcaseItems} />
         </div>
       </div>
     </section>

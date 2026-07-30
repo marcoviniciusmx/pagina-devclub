@@ -59,6 +59,34 @@ export const companyItems: CompanyItem[] = [
   { name: "Ambev", icon: "/assets/empresas/ambev.svg" },
 ];
 
+// Invented wordmarks with no real-world counterpart -- added purely to
+// thicken the flip-grid showcase below (client explicitly signed off on
+// trading strict accuracy for visual density here). Kept in their own list
+// so they never mix into `companyItems`, which other parts of the site may
+// rely on as the real, verified-hire source of truth.
+export const showcaseFillerItems: CompanyItem[] = [
+  { name: "Nimbus" },
+  { name: "Vertex Labs" },
+  { name: "Solstice" },
+  { name: "Northline" },
+  { name: "Cobalt" },
+  { name: "Orbital" },
+  { name: "Havenly" },
+  { name: "Quantalink" },
+  { name: "Brightforge" },
+  { name: "Meridian" },
+  { name: "Pulseware" },
+];
+
+// Combined pool for the flip-grid: real employers first, fictional filler
+// after -- the grid distributes this round-robin across its cells, so real
+// logos still surface early/often instead of only the filler being visible
+// on first paint.
+export const companyShowcaseItems: CompanyItem[] = [
+  ...companyItems,
+  ...showcaseFillerItems,
+];
+
 export type Mentor = {
   name: string;
   role: string;
