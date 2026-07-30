@@ -48,3 +48,6 @@ next-env.d.ts
 # python bytecode cache (ui-ux-pro-max skill scripts)
 __pycache__/
 *.pyc
+
+# Playwright MCP session artifacts (screenshots, snapshots, console logs)
+.playwright-mcp/
