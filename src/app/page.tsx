@@ -1,6 +1,7 @@
 import { Hero } from "@/components/sections/Hero";
 import { Marquee } from "@/components/sections/Marquee";
 import { BentoGrid } from "@/components/sections/BentoGrid";
+import { DevClubCore } from "@/components/sections/DevClubCore";
 import { Formacao } from "@/components/sections/Formacao";
 import { Mentoria } from "@/components/sections/Mentoria";
 import { Depoimentos } from "@/components/sections/Depoimentos";
@@ -14,6 +15,7 @@ export default function Home() {
         <Hero />
         <Marquee />
         <BentoGrid />
+        <DevClubCore />
         <Formacao />
         <Mentoria />
         <Depoimentos />

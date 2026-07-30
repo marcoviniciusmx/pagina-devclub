@@ -196,12 +196,20 @@ function highlightCode(text: string) {
 
 function TypewriterCode() {
   const reduceMotion = useReducedMotion();
-  const [displayed, setDisplayed] = useState(
-    reduceMotion ? PLATFORM_CODE : "",
-  );
+  // Sempre começa vazio -- igual em servidor e cliente -- e só decide se
+  // mostra o texto pronto (reduced motion) ou digita aos poucos dentro do
+  // efeito abaixo, que roda apenas depois da hidratação. Decidir isso já
+  // no useState (como antes) fazia a primeira renderização do cliente
+  // divergir do HTML do servidor sempre que o SO do visitante já estivesse
+  // com "reduzir movimento" ativado -- o mesmo tipo de mismatch que
+  // Hero.tsx evita com useSyncExternalStore para o portal do header.
+  const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion) {
+      setDisplayed(PLATFORM_CODE);
+      return;
+    }
 
     let index = 0;
     let cancelled = false;
