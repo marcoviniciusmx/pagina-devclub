@@ -112,6 +112,27 @@ export function Hero() {
     let cancelled = false;
     let raf = 0;
 
+    // iOS refuses to decode/paint a muted video that has been only ever
+    // seeked, never played -- the very first programmatic `currentTime`
+    // write can render as a blank frame instead of the real one. A single
+    // silent play()->pause() on the user's first touch "warms up" the
+    // decoder so every scrub-driven seek after that paints immediately.
+    // Harmless on desktop (still fires on the first click, just never
+    // matters there since desktop decoders don't have this quirk).
+    let primed = false;
+    function primeVideo() {
+      if (primed || !video) return;
+      primed = true;
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise.then(() => video.pause()).catch(() => {});
+      } else {
+        video.pause();
+      }
+    }
+    window.addEventListener("pointerdown", primeVideo, { once: true, passive: true });
+    window.addEventListener("touchstart", primeVideo, { once: true, passive: true });
+
     // The scrub tween below needs `video.duration` to set its target
     // `currentTime` -- that's only known once the browser has parsed the
     // file's metadata, which for a local file is fast but never
@@ -191,12 +212,41 @@ export function Hero() {
         // settles during each act's own hold and speeds up toward the
         // next seam, reading as a paced narrative rather than a raw,
         // mechanical 1:1 scrollbar-to-frame mapping.
+        //
+        // Tweens a plain proxy (`scrubTarget.t`), not `video` directly --
+        // that decouples "what time the scroll wants" from "what we
+        // actually tell the decoder", which is what `onUpdate` below needs
+        // to coalesce seeks. Tweening `video.currentTime` straight (the
+        // previous approach) let GSAP write a new value on every single
+        // scrub tick; desktop decoders keep up, but a phone's decoder
+        // falls behind during a fast scroll/flick, the writes queue up,
+        // and they resolve in bursts once the gesture ends -- exactly the
+        // "stuttering slideshow" reported on mobile, never seen on desktop.
+        const scrubTarget = { t: 0 };
+        // `(hover: none) and (pointer: coarse)` -- touch-primary devices,
+        // not merely "narrow viewport" (a resized desktop window still has
+        // a fast decoder and shouldn't get the coarser epsilon below).
+        const isCoarsePointer =
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+        const seekEpsilon = isCoarsePointer ? 0.05 : 0.008;
         tl.to(
-          video,
+          scrubTarget,
           {
-            currentTime: video.duration || 0,
+            t: video.duration || 0,
             ease: actLingerEase(ACTS.length, LINGER),
             duration: TOTAL_DURATION,
+            onUpdate: () => {
+              // Never queue a seek while the decoder is still resolving
+              // the last one -- this is the actual fix. `scrubTarget.t`
+              // keeps advancing every tick regardless (cheap, just a
+              // number), so the moment the decoder frees up we snap
+              // straight to the latest target instead of working through
+              // a backlog of stale intermediate seeks.
+              if (video.seeking) return;
+              if (Math.abs(video.currentTime - scrubTarget.t) < seekEpsilon) return;
+              video.currentTime = scrubTarget.t;
+            },
           },
           0,
         );
@@ -273,6 +323,8 @@ export function Hero() {
       cancelled = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("load", onLoad);
+      window.removeEventListener("pointerdown", primeVideo);
+      window.removeEventListener("touchstart", primeVideo);
       // `gsap.context().revert()` tears down every tween AND every
       // ScrollTrigger instance created inside the context -- this is the
       // full cleanup that prevents leaked ScrollTrigger instances from
