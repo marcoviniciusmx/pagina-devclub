@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, DM_Sans } from "next/font/google";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -31,7 +32,16 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${dmSans.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden bg-background text-foreground">
-        {children}
+        {/* `reducedMotion="user"` makes every `motion.*`/`AnimatePresence`
+            in the app (Reveal, Faq, Depoimentos' modal, etc.)
+            automatically respect the OS-level "reduce motion" preference --
+            without this, framer-motion's own animations ignore that
+            preference entirely (it drives styles directly via motion
+            values, not the CSS `animation`/`transition` properties that
+            globals.css's `@media (prefers-reduced-motion: reduce)` rule
+            already handles). Users without the preference set see zero
+            change. */}
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </body>
     </html>
   );

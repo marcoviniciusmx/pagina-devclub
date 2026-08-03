@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { createNoise3D } from "simplex-noise";
-import { gsap } from "@/lib/gsap";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { stackItems } from "@/lib/data";
 
 // Fases 1-4 do plano "DevClub Core": núcleo + campo de fluxo + nós (Fase 1),
@@ -160,9 +160,7 @@ export function DevClubCore() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reduced = prefersReducedMotion();
     const noise3D = createNoise3D();
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -193,7 +191,27 @@ export function DevClubCore() {
       hoverRadius = coreR * HOVER_RADIUS_FACTOR;
     }
     size();
-    window.addEventListener("resize", size);
+    // Resize only recomputes the stage's own dimensions above -- it never
+    // touches the 18 nodes already drifting around the old center. Without
+    // this, rotating a tablet (or resizing the window) mid-scroll left
+    // every chip stranded relative to the new CX/CY, only crawling back via
+    // the (deliberately weak) boundary-containment force over several
+    // seconds. Shifting every node by the same delta the center moved keeps
+    // their relative arrangement intact with no visible jump.
+    function onResize() {
+      const prevCX = CX;
+      const prevCY = CY;
+      size();
+      const dx = CX - prevCX;
+      const dy = CY - prevCY;
+      if (dx || dy) {
+        nodes.forEach((n) => {
+          n.x += dx;
+          n.y += dy;
+        });
+      }
+    }
+    window.addEventListener("resize", onResize);
 
     const mouse: MouseState = {
       x: 0,
@@ -649,20 +667,45 @@ export function DevClubCore() {
         sequence.fan = easeFanOut(
           Math.min(1, (now - sequenceStart) / (FAN_DURATION * 1000)),
         );
+        // O núcleo começa a relaxar (soltar o aperto do Drag) na MESMA
+        // curva com que os nós se afastam do centro -- energia se
+        // liberando ao longo do leque inteiro, não só no instante do
+        // flash. Contínuo com o mesmo cálculo no Rebuild abaixo (os dois
+        // só existem porque `sequence.fan` já é contínuo entre eles).
+        sequence.charge = 1 - sequence.fan;
         if (flashP >= 1) coreState = "rebuild";
       } else if (coreState === "rebuild") {
         sequence.explode = 0;
         const fanP = Math.min(1, (now - sequenceStart) / (FAN_DURATION * 1000));
         sequence.fan = easeFanOut(fanP);
-        if (fanP >= 1) {
+        sequence.charge = 1 - sequence.fan;
+        // Vira "idle" assim que o leque estiver VISUALMENTE completo, não
+        // só quando o cronômetro em tempo bruto zera -- `power3.out` (a
+        // curva do leque) já está a ~99.5% do caminho bem antes de `fanP`
+        // cravar 1, e esperar a duração cheia deixava um resto "morto":
+        // as tecnologias já pareciam paradas, mas nem retomavam o vagar
+        // orgânico (preso em `coreState === "rebuild"`) nem o núcleo
+        // relaxava de volta (chargeLevel/raio só soltavam no snap final)
+        // -- o delay reportado nas duas coisas ao mesmo tempo.
+        if (sequence.fan >= 0.995 || fanP >= 1) {
           coreState = "idle";
           // Sem isso o núcleo fica "carregado" (mais apertado e mais
           // brilhante, ver `drawCore`) para sempre depois do primeiro
           // clique -- charge/drag só fazem sentido durante a própria
-          // sequência, não no regime vivo de volta.
+          // sequência, não no regime vivo de volta. Na prática já chega
+          // perto de 0 sozinho (contínuo desde o início do Explosion),
+          // isso só zera o resíduo.
           sequence.charge = 0;
           sequence.drag = 0;
           sequence.fan = 0;
+          // O mesmo Hero Moment do primeiro despertar da seção -- uma
+          // onda síncrona percorrendo TODAS as conexões de uma vez, ver
+          // `heroEnvelope` no `tick` -- se repete aqui, no instante exato
+          // em que o leque termina de se abrir. Reforça visualmente que
+          // as 18 tecnologias "voltaram", do mesmo jeito que apareceram
+          // pela primeira vez, em vez de deixar o sistema normal de fios
+          // (1 a 5 por vez, aleatório) reintroduzir as conexões aos poucos.
+          heroMomentStart = now;
         }
       }
     }
@@ -851,7 +894,25 @@ export function DevClubCore() {
 
       observer = new IntersectionObserver(
         (entries) => {
-          if (entries.some((e) => e.isIntersecting)) wake();
+          const intersecting = entries.some((e) => e.isIntersecting);
+          if (intersecting) {
+            if (!awake) {
+              wake();
+            } else if (!raf) {
+              // Scrolled back into view after being paused below -- only
+              // the rAF loop resumes; the one-time GSAP entrance (`wake`'s
+              // own context) never replays.
+              raf = requestAnimationFrame(tick);
+            }
+          } else if (awake && raf) {
+            // Once the user has scrolled past this section, the canvas
+            // redraw + 18-node simulation has nothing left to show anyone
+            // -- without this, `tick` kept re-scheduling itself forever,
+            // spending a frame budget on every screen for the rest of the
+            // page's scroll for a section nobody can see.
+            cancelAnimationFrame(raf);
+            raf = 0;
+          }
         },
         { threshold: 0.2 },
       );
@@ -859,7 +920,7 @@ export function DevClubCore() {
     }
 
     return () => {
-      window.removeEventListener("resize", size);
+      window.removeEventListener("resize", onResize);
       stage.removeEventListener("pointermove", onPointerMove);
       stage.removeEventListener("pointerleave", onPointerLeave);
       stage.removeEventListener("click", onClick);

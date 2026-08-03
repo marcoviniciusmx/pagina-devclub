@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { gsap } from "@/lib/gsap";
+import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import type { CompanyItem } from "@/lib/data";
 
 // Follow-through, physically caused, never a state swap:
@@ -86,10 +86,7 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
     const nodeB = nodeBRef.current;
     if (!nodeA || !nodeB || items.length < 2) return;
 
-    const isReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (isReduced) return;
+    if (prefersReducedMotion()) return;
 
     let cancelled = false;
     let frontIsA = true;
@@ -118,7 +115,15 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
           setFrontContent(nextContentIndex);
           nextContentIndex = (nextContentIndex + 1) % items.length;
           frontIsA = !frontIsA;
-          gsap.delayedCall(gsap.utils.random(MIN_HOLD, MAX_HOLD), runCycle);
+          // Re-entering via `ctx.add` (not calling `runCycle` directly) is
+          // what makes this safe: `gsap.context()` only auto-tracks tweens
+          // created SYNCHRONOUSLY inside its own callback, and this fires
+          // later, async, from a tween's `onComplete`. Without this, the
+          // `gsap.to()` calls the next cycle makes would live outside the
+          // context, and `ctx.revert()` on unmount wouldn't kill them.
+          gsap.delayedCall(gsap.utils.random(MIN_HOLD, MAX_HOLD), () =>
+            ctx.add(runCycle),
+          );
         };
 
         gsap.to(backNode, {
@@ -156,7 +161,7 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
 
       // Random initial offset so cells never push in sync -- the whole
       // point of the "keepy-uppy" feel is that it's never one beat.
-      gsap.delayedCall(gsap.utils.random(0, MAX_HOLD), runCycle);
+      gsap.delayedCall(gsap.utils.random(0, MAX_HOLD), () => ctx.add(runCycle));
     });
 
     return () => {
@@ -176,7 +181,7 @@ function FlipCell({ items }: { items: CompanyItem[] }) {
           rather than "exiting a box". */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-background to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-background to-background/0"
         style={{ height: FADE_ZONE }}
       />
       <div

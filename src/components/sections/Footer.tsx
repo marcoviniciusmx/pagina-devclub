@@ -115,7 +115,7 @@ export function Footer() {
               All systems operational
             </span>
           </div>
-          <p className="text-xs text-subtle">
+          <p className="text-xs text-muted-foreground">
             © {year} DevClub. Todos os direitos reservados.
           </p>
         </div>

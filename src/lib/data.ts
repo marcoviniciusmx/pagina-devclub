@@ -121,57 +121,74 @@ export const mentors: Mentor[] = [
   },
 ];
 
-export type GradeArea = {
+// A "Jornada DevClub" (src/components/sections/Jornada.tsx) substitui a
+// antiga grade de formações em accordion por uma narrativa única de
+// evolução do aluno.
+export type JourneyStep = {
+  id: string;
   title: string;
   description: string;
-  icon: string | null;
-  // Tech pills shown on the expanded card -- these are the DevClub
-  // formação's own official curriculum tags, not derived/invented ones.
+  // Tecnologias/temas daquela fase -- vazio nos checkpoints que marcam um
+  // momento (entrada, diploma, comunidade) em vez de um conjunto de skills.
   techs: string[];
 };
 
-export const gradeAreas: GradeArea[] = [
+export const journeySteps: JourneyStep[] = [
   {
-    title: "FullStack Pro",
+    id: "entrada",
+    title: "Você entra no DevClub",
     description:
-      "A formação mais completa para te levar do zero ao mercado de trabalho pronto para vagas de alto nível.",
-    icon: "/assets/tech-stack/react.svg",
-    techs: [
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "React.js",
-      "Node.js",
-      "React Native",
-      "TypeScript",
-    ],
+      "O primeiro passo de uma jornada que transforma quem você é como profissional.",
+    techs: [],
   },
   {
-    title: "FrontEnd Club",
+    id: "fundamentos",
+    title: "Aprende os fundamentos",
     description:
-      "Domine a criação de interfaces modernas, interativas e de alta performance no ecossistema web.",
-    icon: "/assets/tech-stack/react.svg",
-    techs: ["HTML", "CSS", "JavaScript", "React.js"],
+      "A base sólida que sustenta toda a evolução: a lógica por trás de qualquer aplicação.",
+    techs: ["HTML", "CSS", "JavaScript"],
   },
   {
-    title: "IA Club",
+    id: "frontend",
+    title: "Evolui para Front-End",
     description:
-      "Domine as ferramentas e conceitos de Inteligência Artificial para criar sistemas autônomos e autoria de ponta.",
-    icon: null,
-    techs: [
-      "Engenharia de Prompt",
-      "Machine Learning",
-      "Deep Learning",
-      "n8n",
-      "Prospecção de Clientes",
-    ],
+      "Domina a criação de interfaces modernas e constrói projetos reais para o portfólio.",
+    techs: ["React", "Next.js", "TailwindCSS"],
   },
   {
-    title: "Mil reais em 7 dias",
+    id: "fullstack",
+    title: "Torna-se Full Stack",
     description:
-      "Aprenda a criar sites profissionais e a captar clientes na prática para faturar seus primeiros mil reais em 7 dias.",
-    icon: null,
-    techs: ["Criação de Sites", "Prospecção de Clientes", "Vendas", "Freelance"],
+      "Passa a dominar o back-end inteiro: APIs, banco de dados e arquitetura de sistemas.",
+    techs: ["Node.js", "TypeScript", "PostgreSQL"],
+  },
+  {
+    id: "ia",
+    title: "Aprende Inteligência Artificial",
+    description:
+      "Cria sistemas autônomos e aplica IA generativa em produtos reais.",
+    techs: ["ChatGPT", "Claude", "n8n"],
+  },
+  {
+    id: "monetizacao",
+    title: "Aprende a ganhar dinheiro",
+    description:
+      "Transforma conhecimento técnico em faturamento: primeiros clientes, primeiros contratos.",
+    techs: ["Criação de Sites", "Prospecção", "Vendas", "Freelancing"],
+  },
+  {
+    id: "diploma",
+    title: "Conquista o diploma reconhecido pelo MEC",
+    description:
+      "A formação se torna oficial: um diploma de pós-graduação reconhecido em todo o território nacional.",
+    techs: [],
+  },
+  {
+    id: "comunidade",
+    title: "Continua fazendo parte da comunidade DevClub",
+    description:
+      "A jornada não termina na formatura: mentoria, networking e evolução contínua.",
+    techs: [],
   },
 ];
 
@@ -199,38 +216,35 @@ export const faqItems: FaqItem[] = [
   {
     question: "O diploma tem validade oficial?",
     answer:
-      "Sim. O MBA e a Pós-Graduação em Tecnologia do ecossistema DevClub são reconhecidos pelo MEC, com emissão de diploma oficial ao final da formação.",
+      "Sim. O MBA em Inteligência Artificial do ecossistema DevClub são reconhecidos pelo MEC, com emissão de diploma oficial ao final da formação.",
   },
 ];
 
 export type Testimonial = {
   studentName: string;
   role: string;
-  /**
-   * Placeholder YouTube video ID — replace with the real testimonial video ID.
-   * https://www.youtube.com/watch?v=<id>
-   */
+  /** https://www.youtube.com/watch?v=<id> */
   youtubeId: string;
   thumbnail: string;
 };
 
 export const testimonials: Testimonial[] = [
   {
-    studentName: "Aluno DevClub",
-    role: "Contratado como Dev Front-End",
-    youtubeId: "VIDEO_ID_1",
+    studentName: "Annanda Farias",
+    role: "Contratada como Programadora",
+    youtubeId: "DqsZ_iy0p6U",
     thumbnail: "/assets/bento/interface-devclub.png",
   },
   {
-    studentName: "Aluno DevClub",
-    role: "Contratado como Dev Back-End",
-    youtubeId: "VIDEO_ID_2",
+    studentName: "Bruno Barbosa",
+    role: "Contratado como Programador",
+    youtubeId: "kKU8nFsSY8M",
     thumbnail: "/assets/bento/playground-devlcub.png",
   },
   {
-    studentName: "Aluno DevClub",
-    role: "Transição de carreira concluída",
-    youtubeId: "VIDEO_ID_3",
+    studentName: "Alexandre Nascimento",
+    role: "Contratado como Programador",
+    youtubeId: "sHiiEM_xPdE",
     thumbnail: "/assets/hero/rodolfo-programador.png",
   },
 ];

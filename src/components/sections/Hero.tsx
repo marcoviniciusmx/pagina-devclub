@@ -4,7 +4,7 @@ import { ChevronsRightIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { gsap, ScrollTrigger, prefersReducedMotion } from "@/lib/gsap";
 import { NeonButton } from "@/components/ui/NeonButton";
 import { DEVCLUB_URL, STUDENT_AREA_URL } from "@/lib/data";
 
@@ -121,9 +121,7 @@ export function Hero() {
       if (cancelled) return;
 
       const ctx = gsap.context(() => {
-        const isReduced = window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches;
+        const isReduced = prefersReducedMotion();
 
         const actEls = actRefs.current;
         const lastAct = actEls[actEls.length - 1];
@@ -169,6 +167,18 @@ export function Hero() {
             // default scrub range was written for.
             scrub: 0.8,
             pin: true,
+            // No ancestor here has its own transform, so GSAP is free to
+            // pin with real `position: fixed` -- explicit because without
+            // it, ScrollTrigger's own auto-detection was choosing
+            // `pinType: "transform"` instead (confirmed via computed style:
+            // `transform: matrix(1,0,0,1,0,3600)` on the pinned section
+            // rather than `position: fixed`). A transform-driven pin is
+            // recalculated as a matrix on every scroll tick and handed off
+            // to normal document flow at the exact moment it un-pins --
+            // one more place for a compositor seam to show up than native
+            // `fixed`, which the browser can position without that
+            // per-frame matrix math.
+            pinType: "fixed",
             pinSpacing: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
@@ -299,8 +309,16 @@ export function Hero() {
       {/* Vignette + a stronger left-side gradient so the copy column stays
           readable regardless of how bright any given video frame is. */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.6)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background via-background/55 to-transparent" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/40" />
+      {/* `to-background/0` here, not the `to-transparent` keyword: Tailwind
+          v4 interpolates its from/via/to gradients in oklab by default, and
+          fading an opaque color to the bare "transparent" keyword (which is
+          transparent BLACK, a different hue) produces a measurable brightness
+          bump partway through the fade -- confirmed by sampling rendered
+          pixel rows, not assumed. Fading to a 0%-alpha version of the SAME
+          color keeps hue constant across every stop, so there's nothing for
+          oklab to interpolate except opacity. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-background via-background/55 to-background/0" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/0 to-background/40" />
 
       {/* Dedicated bottom seam: the fade above tapers gently across the
           whole viewport, which isn't reliably opaque enough by the very
@@ -309,8 +327,9 @@ export function Hero() {
           covered by it. This one is short, reaches full `--color-background`
           well before the edge, and outranks that whole layer (z-20), so
           nothing pinned in Hero can ever end on an uncovered pixel where it
-          meets the next section. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-56 bg-gradient-to-t from-background to-transparent" />
+          meets the next section. `to-background/0`, not `to-transparent` --
+          see the note above. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-56 bg-gradient-to-t from-background to-background/0" />
 
       {/* Persistent header: logo + nav actions are never part of the
           scroll story -- they're real navigation and must be visible and
@@ -363,6 +382,13 @@ export function Hero() {
           visually collide -- only opacity/position differentiates them. */}
       {ACTS.map((act, i) => {
         const isLast = i === ACTS.length - 1;
+        // Only one real `<h1>` may exist on the page -- the other 3 acts
+        // share the exact same visual treatment via `<p>` instead, so a
+        // screen reader's heading outline never sees 4 competing H1s even
+        // though all 4 slots are always mounted (GSAP only toggles their
+        // opacity/visibility, never their presence in the DOM).
+        const isFirst = i === 0;
+        const TitleTag = isFirst ? "h1" : "p";
         return (
           <div
             key={act.badge}
@@ -378,9 +404,9 @@ export function Hero() {
               <span className="mb-5 inline-block w-fit rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 font-mono text-xs font-medium tracking-[0.2em] text-accent">
                 {act.badge}
               </span>
-              <h1 className="font-heading text-4xl font-semibold leading-[1.1] text-foreground sm:text-5xl lg:text-6xl">
+              <TitleTag className="font-heading text-4xl font-semibold leading-[1.1] text-foreground sm:text-5xl lg:text-6xl">
                 {act.title}
-              </h1>
+              </TitleTag>
               <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
                 {act.description}
               </p>

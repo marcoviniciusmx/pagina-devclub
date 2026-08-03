@@ -2,7 +2,7 @@ import { Hero } from "@/components/sections/Hero";
 import { Marquee } from "@/components/sections/Marquee";
 import { BentoGrid } from "@/components/sections/BentoGrid";
 import { DevClubCore } from "@/components/sections/DevClubCore";
-import { Formacao } from "@/components/sections/Formacao";
+import { Jornada } from "@/components/sections/Jornada";
 import { Mentoria } from "@/components/sections/Mentoria";
 import { Depoimentos } from "@/components/sections/Depoimentos";
 import { Faq } from "@/components/sections/Faq";
@@ -16,7 +16,7 @@ export default function Home() {
         <Marquee />
         <BentoGrid />
         <DevClubCore />
-        <Formacao />
+        <Jornada />
         <Mentoria />
         <Depoimentos />
         <Faq />

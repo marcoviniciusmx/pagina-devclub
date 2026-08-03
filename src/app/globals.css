@@ -7,14 +7,14 @@
   --color-border: #1a1a1a;
   --color-border-soft: rgba(255, 255, 255, 0.08);
   --color-foreground: #ffffff;
-  /* Accessible body-copy gray (7:1 on --color-background). #666666 is kept
-     below as --color-subtle for large/decorative text only: at 16px it clears
-     just ~3.4:1 against #0a0a0a, under the 4.5:1 AA floor for body text. */
+  /* Accessible body-copy gray (7:1 on --color-background). */
   --color-muted-foreground: #9a9a9a;
-  --color-subtle: #666666;
   --color-accent: #39d572;
   --color-accent-foreground: #0a0a0a;
   --color-accent-glow: rgba(57, 213, 114, 0.4);
+  /* Dourado do diploma/formatura -- mesma receita já usada inline em
+     `mec-seal-pulse` abaixo, agora tokenizada para a Jornada DevClub. */
+  --color-gold: #ffd700;
 }
 
 @theme inline {
@@ -25,9 +25,9 @@
   --color-border-soft: var(--color-border-soft);
   --color-foreground: var(--color-foreground);
   --color-muted-foreground: var(--color-muted-foreground);
-  --color-subtle: var(--color-subtle);
   --color-accent: var(--color-accent);
   --color-accent-foreground: var(--color-accent-foreground);
+  --color-gold: var(--color-gold);
   --font-heading: var(--font-space-grotesk);
   --font-body: var(--font-dm-sans);
 }
@@ -78,23 +78,6 @@
     text-shadow: 0 0 24px var(--color-accent-glow);
   }
 
-  .mask-fade-x {
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 8%,
-      black 92%,
-      transparent
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 8%,
-      black 92%,
-      transparent
-    );
-  }
-
   /* Light sweeping around the border: a conic-gradient ring clipped to a
      hairline via the padding+mask-composite trick, spun via `transform`
      (not the gradient's own angle) so no `@property` registration is
@@ -125,18 +108,6 @@
 @keyframes border-beam-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes vortex-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes vortex-spin-reverse {
-  to {
-    transform: rotate(-360deg);
   }
 }
 
